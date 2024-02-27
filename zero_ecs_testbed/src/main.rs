@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use zero_ecs::{component, entity};
+use zero_ecs::{component, entity, system};
 
 #[component]
 struct FlowerComponent;
@@ -10,11 +10,9 @@ struct FlowerEntity {
     flower_component: FlowerComponent,
 }
 
-fn my_test() {
-    println!("hej");
-}
+#[system]
+fn print_names() {}
 
 fn main() {
-    my_test();
     println!("Hello, world!");
 }

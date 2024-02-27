@@ -48,6 +48,8 @@ dependencies = [
 name = "zero_ecs_build"
 version = "0.1.0"
 dependencies = [
+ "quote",
+ "syn",
  "zero_ecs_macros",
 ]
 
@@ -63,6 +65,8 @@ dependencies = [
 name = "zero_ecs_testbed"
 version = "0.1.0"
 dependencies = [
+ "quote",
+ "syn",
  "zero_ecs",
  "zero_ecs_build",
 ]
