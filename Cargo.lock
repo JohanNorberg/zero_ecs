@@ -5,10 +5,16 @@ version = 3
 [[package]]
 name = "zero_ecs"
 version = "0.1.0"
+dependencies = [
+ "zero_ecs_macros",
+]
 
 [[package]]
 name = "zero_ecs_build"
 version = "0.1.0"
+dependencies = [
+ "zero_ecs_macros",
+]
 
 [[package]]
 name = "zero_ecs_macros"
@@ -17,3 +23,7 @@ version = "0.1.0"
 [[package]]
 name = "zero_ecs_testbed"
 version = "0.1.0"
+dependencies = [
+ "zero_ecs",
+ "zero_ecs_build",
+]

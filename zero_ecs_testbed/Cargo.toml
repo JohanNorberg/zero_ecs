@@ -6,3 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+zero_ecs = { path = "../zero_ecs" }
+
+[build-dependencies]
+zero_ecs_build = { path = "../zero_ecs_build" }
