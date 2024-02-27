@@ -1,6 +1,15 @@
-use zero_ecs::just_for_test;
+#![allow(dead_code)]
 
-#[just_for_test]
+use zero_ecs::{component, entity};
+
+#[component]
+struct FlowerComponent;
+
+#[entity]
+struct FlowerEntity {
+    flower_component: FlowerComponent,
+}
+
 fn my_test() {
     println!("hej");
 }
