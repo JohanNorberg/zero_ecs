@@ -1,0 +1,3 @@
+[workspace]
+members = ["zero_ecs", "zero_ecs_macros", "zero_ecs_build", "zero_ecs_testbed"]
+resolver = "2"
