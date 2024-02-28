@@ -14,7 +14,7 @@ use quote::quote;
 use quote::ToTokens;
 use std::fs::File;
 use std::io::Write;
-use syn::{Fields, Item, Meta};
+use syn::{Fields, Item, ItemFn, Meta, PatType, PathArguments, Type};
 use zero_ecs_build::*;
 macro_rules! debug {
     ($($arg:tt)*) => {
@@ -52,30 +52,31 @@ fn main() {
     };
 
     let mut f = fs::File::create(main_file).expect("Unable to create file");
+
     write!(f, "{}", zero_ecs_rs).expect("Unable to write data to file");
 }
 
 #[derive(Debug)]
-struct EntityDef {
-    name: String,
-    fields: Vec<Field>,
+pub struct EntityDef {
+    pub name: String,
+    pub fields: Vec<Field>,
 }
 
 #[derive(Debug)]
-struct Field {
-    name: String,
-    data_type: String,
+pub struct Field {
+    pub name: String,
+    pub data_type: String,
 }
 
 #[derive(Debug)]
-struct CollectedData {
-    entities: Vec<EntityDef>,
-    queries: Vec<Query>,
+pub struct CollectedData {
+    pub entities: Vec<EntityDef>,
+    pub queries: Vec<Query>,
 }
 #[derive(Debug)]
-struct Query {
-    mutable_fields: Vec<String>,
-    const_fields: Vec<String>,
+pub struct Query {
+    pub mutable_fields: Vec<String>,
+    pub const_fields: Vec<String>,
 }
 fn collect_data(path: &str) -> CollectedData {
     let mut entities = vec![];
@@ -113,19 +114,154 @@ fn collect_data(path: &str) -> CollectedData {
                 });
             }
             Item::Fn(item_fn) => {
-                item_fn.attrs.iter().for_each(|attr| match &attr.meta {
-                    Meta::Path(path) => {
-                        if path.is_ident("system") {
-                            // todo
-                            debug!("{:?}", item_fn.sig.ident.to_string());
+                let is_system = is_system(&item_fn);
+                if is_system {
+                    // get all function parameters
+                    for input in &item_fn.sig.inputs {
+                        match input {
+                            syn::FnArg::Receiver(_) => {}
+                            syn::FnArg::Typed(pat_type) => {
+                                let mut ty = pat_type.ty.clone();
+                                match *ty {
+                                    Type::Path(typed_path) => {
+                                        for segment in typed_path.path.segments.iter() {
+                                            let name = segment.ident.to_string();
+
+                                            if name == "Query" {
+                                                //debug!("{}", name);
+                                                match &segment.arguments {
+                                                    PathArguments::AngleBracketed(arguments) => {
+                                                        if let Some(arg) =
+                                                            &arguments.args.iter().next()
+                                                        {
+                                                            match arg {
+                                                                syn::GenericArgument::Type(ty) => {
+                                                                    // debug!(
+                                                                    //     "{}",
+                                                                    //     ty.to_token_stream()
+                                                                    // );
+                                                                    //print_type(ty);
+                                                                    if let Some(query) =
+                                                                        collect_query(ty)
+                                                                    {
+                                                                        queries.push(query);
+                                                                    }
+                                                                }
+                                                                _ => {}
+                                                            }
+                                                        }
+                                                    }
+                                                    _ => {}
+                                                }
+                                            }
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
                         }
                     }
-                    _ => {}
-                });
+                }
             }
             _ => {}
         }
     }
 
     CollectedData { entities, queries }
+}
+
+fn collect_query(ty: &Type) -> Option<Query> {
+    // handle reference, they have one value
+    // "& mut Position"
+    // "& Velocity"
+    // also handle tuples, they have multiple, examples
+    // (& mut Position , & Velocity)
+
+    let query = match ty {
+        Type::Reference(type_reference) => {
+            let mut mutable_fields = vec![];
+            let mut const_fields = vec![];
+            let ty = type_reference.elem.clone();
+            match *ty {
+                Type::Path(type_path) => {
+                    if type_reference.mutability.is_some() {
+                        mutable_fields.push(type_path.to_token_stream().to_string());
+                    } else {
+                        const_fields.push(type_path.to_token_stream().to_string());
+                    }
+                }
+                _ => {}
+            }
+            Some(Query {
+                mutable_fields,
+                const_fields,
+            })
+        }
+        Type::Tuple(type_tuple) => {
+            let mut mutable_fields = vec![];
+            let mut const_fields = vec![];
+            for elem in &type_tuple.elems {
+                match elem {
+                    Type::Reference(type_reference) => {
+                        if type_reference.mutability.is_some() {
+                            mutable_fields.push(type_reference.elem.to_token_stream().to_string());
+                        } else {
+                            const_fields.push(type_reference.elem.to_token_stream().to_string());
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            Some(Query {
+                mutable_fields,
+                const_fields,
+            })
+        }
+        _ => None,
+    };
+
+    if let Some(query) = query {
+        if query.mutable_fields.len() == 0 && query.const_fields.len() == 0 {
+            None
+        } else {
+            Some(query)
+        }
+    } else {
+        None
+    }
+}
+
+//only used for debugging
+pub fn _print_type(ty: &Type) {
+    match ty {
+        // Double dereference to get the `Type` from `&Box<Type>`
+        Type::Array(_) => debug!("Array"),
+        Type::BareFn(_) => debug!("BareFn"),
+        Type::Group(_) => debug!("Group"),
+        Type::ImplTrait(_) => debug!("ImplTrait"),
+        Type::Infer(_) => debug!("Infer"),
+        Type::Macro(_) => debug!("Macro"),
+        Type::Never(_) => debug!("Never"),
+        Type::Paren(_) => debug!("Paren"),
+        Type::Path(_) => debug!("Path"),
+        Type::Ptr(_) => debug!("Ptr"),
+        Type::Reference(_) => debug!("Reference"),
+        Type::Slice(_) => debug!("Slice"),
+        Type::TraitObject(_) => debug!("TraitObject"),
+        Type::Tuple(_) => debug!("Tuple"),
+        Type::Verbatim(_) => debug!("Verbatim"),
+        _ => {} // Add new variants here as needed
+    }
+}
+
+fn is_system(item_fn: &ItemFn) -> bool {
+    for attr in &item_fn.attrs {
+        if let Meta::Path(path) = &attr.meta {
+            if path.is_ident("system") {
+                //debug!("{:?}", item_fn.sig.ident.to_string());
+                return true;
+            }
+        }
+    }
+    false
 }
