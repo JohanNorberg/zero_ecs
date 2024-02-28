@@ -38,7 +38,6 @@ pub fn generate_queries(out_dir: &str) -> String {
             }
         }
 
-        pub struct World {}
     };
     write_token_stream_to_file(out_dir, file_name, &code_rs.to_string())
 }

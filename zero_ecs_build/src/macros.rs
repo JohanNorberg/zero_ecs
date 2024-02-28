@@ -1,3 +1,5 @@
+#[allow(unused_macros, unused_imports)]
+use quote::format_ident;
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {
