@@ -1,18 +1,16 @@
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs::{self};
 use std::path::Path;
 use std::process::Command;
 
 use quote::quote;
 pub fn generate_queries(out_dir: &str) -> String {
     let file_name = "queries.rs";
-    let path = Path::new(out_dir).join(file_name);
 
     let code_rs = quote! {
 
         use std::marker::PhantomData;
 
-        trait QueryFrom<'a, T> {
+        pub trait QueryFrom<'a, T> {
             fn query_from(&'a mut self) -> impl Iterator<Item = T>;
         }
         #[derive(Default, Debug)]
@@ -29,12 +27,20 @@ pub fn generate_queries(out_dir: &str) -> String {
             }
         }
 
-        struct Query<'a, T> {
+        pub struct Query<'a, T> {
             a_query: AQuery<T>,
             world: &'a mut World,
         }
 
-        struct World {}
+        impl<'a, T> Query<'a, T>
+            where World: QueryFrom<'a, T>,
+        {
+            pub fn iter_mut(&'a mut self) -> impl Iterator<Item = T> + 'a {
+                self.a_query.iter_mut(self.world)
+            }
+        }
+
+        pub struct World {}
     };
     write_token_stream_to_file(out_dir, file_name, &code_rs.to_string())
 }

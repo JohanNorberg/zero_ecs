@@ -1,42 +1,26 @@
-#![allow(dead_code)]
+#![allow(dead_code, unused_mut, unused_variables)]
 
 // include main_ecs.rs
 include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 
-use zero_ecs::{component, entity, system};
+use zero_ecs::{component, entity, make_mut, system};
 
 #[component]
-struct FlowerComponent;
+struct Position(f32, f32);
+
+#[component]
+struct Velocity(f32, f32);
 
 #[entity]
-struct FlowerEntity {
-    flower_component: FlowerComponent,
+struct Enemy {
+    position: Position,
 }
 
 #[system]
-fn print_names() {}
+fn print_positions(mut query: Query<&mut Position>) {}
 
+#[system]
+fn apply_velocity(mut query: Query<(&mut Position, &Velocity)>) {}
 fn main() {
     println!("Hello, world!");
 }
-/*
-trait QueryFrom<'a, T> {
-    fn query_from(&'a mut self) -> impl Iterator<Item = T>;
-}
-#[derive(Default, Debug)]
-struct AQuery<T> {
-    phantom: PhantomData<T>,
-}
-impl<'a, T: 'a> AQuery<T> {
-    fn iter_mut(&self, world: &'a mut World) -> impl Iterator<Item = T> + 'a
-    where
-        World: QueryFrom<'a, T>,
-    {
-        world.query_from()
-    }
-}
-struct Query<'a, T> {
-    a_query: AQuery<T>,
-    world: &'a mut World,
-}
-struct World {}*/
