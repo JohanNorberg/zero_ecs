@@ -14,6 +14,12 @@ struct Velocity(f32, f32);
 #[entity]
 struct Enemy {
     position: Position,
+    velocity: Velocity,
+}
+
+#[entity]
+struct Flower {
+    position: Position,
 }
 
 #[system]

@@ -7,6 +7,7 @@
     unused_macros,
     unused_mut
 )]
+use core::arch;
 use quote::format_ident;
 use quote::quote;
 use quote::ToTokens;
@@ -23,7 +24,14 @@ fn main() {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("could not get manifest dir");
 
     let main_rs_path = Path::new(&manifest_dir).join("src/main.rs");
-    let collected = collect_data(main_rs_path.to_str().unwrap());
+    let mut collected = collect_data(main_rs_path.to_str().unwrap());
+
+    collected.entities.iter_mut().for_each(|entity| {
+        entity.fields.push(Field {
+            name: "entity".into(),
+            data_type: "Entity".into(),
+        })
+    });
 
     debug!("{:?}", collected);
 
@@ -54,19 +62,53 @@ fn generate_ecs(out_dir: &str, include_files: &mut Vec<String>, collected: &Coll
 
     let mut world_fields = vec![];
 
+    let mut entity_types = collected.entities.iter().map(|entity| {
+        let entity_name = &entity.name;
+        fident!(entity_name)
+    });
+
+    world_rs.push(quote! {
+        #[derive(Debug, Clone)]
+        enum EntityType {
+            #(#entity_types),*
+        }
+
+        #[derive(Debug, Clone)]
+        pub struct Entity {
+            entity_type: EntityType,
+            id: usize
+        }
+    });
+
     for entity in collected.entities.iter() {
         let entity_name = &entity.name;
         let field_name = fident!(singular_to_plural(&pascal_case_to_snake_case(entity_name)));
         let archetype_type = fident!(singular_to_plural(entity_name));
 
         world_fields.push(quote! {
-            #field_name: #archetype_type
+            #field_name: #archetype_type,
+        });
+
+        let archetype_fields = entity.fields.iter().map(|field| {
+            let field_name = format_ident!("{}", singular_to_plural(&field.name));
+            let field_type = format_ident!("{}", &field.data_type);
+            quote! {
+                #field_name: Vec<#field_type>,
+            }
+        });
+
+        world_rs.push(quote! {
+
+            #[derive(Default, Debug)]
+            struct #archetype_type {
+                #(#archetype_fields)*
+            }
         });
     }
 
     world_rs.push(quote! {
         #[derive(Default, Debug)]
-        struct World {
+        pub struct World {
             #(#world_fields)*
         }
     });
