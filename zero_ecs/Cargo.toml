@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 zero_ecs_macros = { path = "../zero_ecs_macros" }
+itertools = "0.12.1"

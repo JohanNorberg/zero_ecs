@@ -9,3 +9,4 @@ edition = "2021"
 zero_ecs_macros = { path = "../zero_ecs_macros" }
 syn = { version = "2.0.51", features = ["full"] }
 quote = "1.0.35"
+itertools = "0.12.1"

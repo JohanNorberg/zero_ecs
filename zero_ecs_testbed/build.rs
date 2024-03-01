@@ -35,8 +35,9 @@ fn main() {
 
     debug!("{:?}", collected);
 
-    include_files.push(generate_queries(&out_dir));
+    include_files.push(generate_default_queries(&out_dir));
     generate_world_rs(&out_dir, &mut include_files, &collected);
+    generate_queries(&out_dir, &mut include_files, &collected);
 
     let main_file = Path::new(&out_dir).join("zero_ecs.rs");
 

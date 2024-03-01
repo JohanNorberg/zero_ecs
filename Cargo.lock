@@ -3,6 +3,21 @@
 version = 3
 
 [[package]]
+name = "either"
+version = "1.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11157ac094ffbdde99aa67b23417ebdd801842852b500e395a45a9c0aac03e4a"
+
+[[package]]
+name = "itertools"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -41,6 +56,7 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 name = "zero_ecs"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "zero_ecs_macros",
 ]
 
@@ -48,6 +64,7 @@ dependencies = [
 name = "zero_ecs_build"
 version = "0.1.0"
 dependencies = [
+ "itertools",
  "quote",
  "syn",
  "zero_ecs_macros",
