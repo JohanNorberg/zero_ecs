@@ -54,6 +54,19 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
 
+        impl World {
+            fn get_query<'a, T: 'a>(&'a mut self) -> Query<'a, T>
+            where
+                World: QueryFrom<'a, T>,
+            {
+                Query {
+                    a_query: AQuery {
+                        phantom: PhantomData,
+                    },
+                    world: self,
+                }
+            }
+        }
     };
     write_token_stream_to_file(out_dir, file_name, &code_rs.to_string())
 }

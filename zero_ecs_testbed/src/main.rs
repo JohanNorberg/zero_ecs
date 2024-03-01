@@ -23,7 +23,11 @@ struct Flower {
 }
 
 #[system]
-fn print_positions(mut query: Query<&mut Position>) {}
+fn print_positions(mut query: Query<&mut Position>) {
+    query.iter_mut().for_each(|mut pos| {
+        println!("Position: {:?}", pos);
+    });
+}
 
 #[system]
 fn apply_velocity(mut query: Query<(&mut Position, &Velocity)>) {}
@@ -32,8 +36,18 @@ fn main() {
     println!("Hello, world!");
 
     let mut world = World::default();
+    let e = world.create(Enemy {
+        position: Position(0.0, 0.0),
+        velocity: Velocity(1.0, 1.0),
+    });
+    let f = world.create(Flower {
+        position: Position(0.0, 0.0),
+    });
+    let f1 = world.create(Flower {
+        position: Position(0.0, 0.0),
+    });
 
-    let t = world.query::<&mut Position>();
+    print_positions(world.get_query());
 }
 
 // create some unit tests
