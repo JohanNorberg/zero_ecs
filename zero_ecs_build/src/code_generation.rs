@@ -109,6 +109,17 @@ pub fn generate_world_rs(
                 #(#archetype_fields)*
             }
         });
+
+        world_rs.push(quote! {
+            impl #archetype_type {
+                fn query<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+                where
+                    #archetype_type: QueryFrom<'a, T>,
+                {
+                    QueryFrom::<T>::query_from(self)
+                }
+            }
+        });
     }
 
     world_rs.push(quote! {
@@ -159,6 +170,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
 
     code_rs.push(quote! {
         use zero_ecs::izip;
+        use zero_ecs::chain;
 
         pub trait QueryFrom<'a, T> {
             fn query_from(&'a mut self) -> impl Iterator<Item = T>;
@@ -256,16 +268,30 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     }
                 }
             })
-
-            //code_rs.push(quote! {
-            //    #[allowunused_parens)]
-            //    impl<'a> Entity<'a, (#(#data_types),*)> for #entity_name {
-            //        fn get_query_model(&'a mut self) -> (#(#data_types),*) {
-            //            (#(#field_quotes),*)
-            //        }
-            //    }
-            //});
         }
+
+        let chain_args: Vec<_> = matching_entities
+            .iter()
+            .map(|entity| {
+                let property_name = format_ident!(
+                    "{}",
+                    singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                );
+                quote! { self.#property_name.query() }
+            })
+            .collect();
+
+        let test = chain_args.iter().next().unwrap();
+
+        code_rs.push(quote! {
+            #[allow(unused_parens)]
+            impl<'a> QueryFrom<'a, (#(#data_types),*)> for World {
+                fn query_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
+                    chain!(#(#chain_args),*)
+                    //#test
+                }
+            }
+        })
     }
 
     let code_rs = quote! {

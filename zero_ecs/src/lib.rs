@@ -1,3 +1,4 @@
+pub use itertools::chain;
 pub use itertools::izip;
 pub use itertools::Itertools;
 pub use zero_ecs_macros::component;
