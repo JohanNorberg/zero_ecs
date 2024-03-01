@@ -32,6 +32,23 @@ fn print_positions(mut query: Query<&mut Position>) {
 #[system]
 fn apply_velocity(mut query: Query<(&mut Position, &Velocity)>) {}
 
+pub trait GetFrom<'a, T> {
+    fn get_from(&'a mut self, entity: Entity) -> Option<T>;
+}
+
+impl<'a> GetFrom<'a, (&'a mut Position, &'a Velocity)> for Enemies {
+    fn get_from(&'a mut self, entity: Entity) -> Option<(&'a mut Position, &'a Velocity)> {
+        if let Some(Some(index)) = self.index_lookup.get(entity.id) {
+            Some((
+                self.positions.get_mut(*index)?,
+                self.velocities.get(*index)?,
+            ))
+        } else {
+            None
+        }
+    }
+}
+
 fn main() {
     println!("Hello, world!");
 

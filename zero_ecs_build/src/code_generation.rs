@@ -132,7 +132,7 @@ pub fn generate_world_rs(
             struct #archetype_type {
                 #(#archetype_fields)*
                 next_id: usize,
-                index_lookup: Vec<usize>,
+                index_lookup: Vec<Option<usize>>,
             }
         });
 
@@ -165,7 +165,7 @@ pub fn generate_world_rs(
         world_rs.push(quote! {
             impl WorldCreate<#entity_name> for World {
                 fn create(&mut self, e: #entity_name) -> Entity {
-                    self.#field_name.index_lookup.push(self.#field_name.entities.len());
+                    self.#field_name.index_lookup.push(Some(self.#field_name.entities.len()));
                     let entity = Entity {
                         entity_type: EntityType::#entity_name,
                         id: self.#field_name.next_id,
