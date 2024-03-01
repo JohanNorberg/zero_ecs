@@ -73,15 +73,26 @@ pub fn generate_world_rs(
     });
 
     world_rs.push(quote! {
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Copy)]
         enum EntityType {
             #(#entity_types),*
         }
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, Copy)]
         pub struct Entity {
             entity_type: EntityType,
             id: usize
+        }
+        impl World {
+            fn query<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+            where
+                World: QueryFrom<'a, T>,
+            {
+                QueryFrom::<T>::query_from(self)
+            }
+        }
+        trait WorldCreate<T> {
+            fn create(&mut self, e: T) -> Entity;
         }
     });
 
@@ -107,6 +118,8 @@ pub fn generate_world_rs(
             #[derive(Default, Debug)]
             struct #archetype_type {
                 #(#archetype_fields)*
+                next_id: usize,
+                index_lookup: Vec<usize>,
             }
         });
 
@@ -117,6 +130,37 @@ pub fn generate_world_rs(
                     #archetype_type: QueryFrom<'a, T>,
                 {
                     QueryFrom::<T>::query_from(self)
+                }
+            }
+        });
+
+        let push_lines = entity
+            .fields
+            .iter()
+            .filter(|e| e.data_type != "Entity")
+            .map(|field| {
+                let component_field_name = format_ident!("{}", singular_to_plural(&field.name));
+                let component_name = fident!(&field.name);
+
+                quote! {
+                    self.#field_name.#component_field_name.push(e.#component_name);
+                }
+            });
+
+        let entity_name = fident!(entity_name);
+
+        world_rs.push(quote! {
+            impl WorldCreate<#entity_name> for World {
+                fn create(&mut self, e: #entity_name) -> Entity {
+                    self.#field_name.index_lookup.push(self.#field_name.entities.len());
+                    let entity = Entity {
+                        entity_type: EntityType::#entity_name,
+                        id: self.#field_name.next_id,
+                    };
+                    self.#field_name.entities.push(entity);
+                    #(#push_lines)*
+                    self.#field_name.next_id += 1;
+                    entity
                 }
             }
         });
