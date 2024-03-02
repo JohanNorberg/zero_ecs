@@ -36,10 +36,7 @@ struct Flower {
 
 #[system]
 fn print_positions(world: &mut World, query: Query<&mut Position>) {
-    //query.iter_mut().for_each(|mut pos| {
-    //    println!("Position: {:?}", pos);
-    //});
-    world.with_query(query).iter_mut().for_each(|mut pos| {
+    world.with_query_mut(query).iter_mut().for_each(|mut pos| {
         println!("Position: {:?}", pos);
     });
 }
@@ -58,16 +55,11 @@ fn count_types(
     mut enemy_query: Query<&EnemyTag>,
     mut flower_query: Query<&FlowerTag>,
 ) {
-    /*let enemy_count = world.with_query(enemy_query).iter_mut().count();
-    let flower_count = world.with_query(flower_query).iter_mut().count();
-    println!("Enemy count: {}", enemy_count);
-    println!("Flower count: {}", flower_count);*/
-
     let mut test = 0;
-    for e in world.with_query(enemy_query).iter_mut() {
+    for e in world.with_query(enemy_query).iter() {
         test += 1;
         println!("enemy: {}", test);
-        for f in world.with_query(flower_query).iter_mut() {
+        for f in world.with_query(flower_query).iter() {
             test += 1;
             println!("flower: {}", test);
         }
@@ -81,10 +73,8 @@ pub trait GetMutFrom<'a, T> {
 impl<'a> GetMutFrom<'a, (&'a mut Position, &'a Velocity)> for Enemies {
     fn get_mut_from(&'a mut self, entity: Entity) -> Option<(&'a mut Position, &'a Velocity)> {
         if let Some(Some(index)) = self.index_lookup.get(entity.id) {
-            Some((
-                self.positions.get_mut(*index)?,
-                self.velocities.get(*index)?,
-            ))
+            let index = *index;
+            Some((self.positions.get_mut(index)?, self.velocities.get(index)?))
         } else {
             None
         }

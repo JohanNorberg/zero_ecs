@@ -41,29 +41,59 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         }
 
         impl<'a, T: 'a> Query<T> {
-            fn iter_mut(&self, world: &'a mut World) -> impl Iterator<Item = T> + 'a
+            fn iter(&self, world: &'a World) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryFrom<'a, T>,
             {
                 world.query_from()
             }
         }
+        impl<'a, T: 'a> Query<T> {
+            fn iter_mut(&self, world: &'a mut World) -> impl Iterator<Item = T> + 'a
+            where
+                World: QueryMutFrom<'a, T>,
+            {
+                world.query_mut_from()
+            }
+        }
 
-        pub struct WithQuery<'a, T> {
+        pub struct WithQueryMut<'a, T> {
             query: Query<T>,
             world: &'a mut World,
         }
+        pub struct WithQuery<'a, T> {
+            query: Query<T>,
+            world: &'a World,
+        }
 
-        impl<'a, T> WithQuery<'a, T>
-            where World: QueryFrom<'a, T>,
+        impl<'a, T> WithQueryMut<'a, T>
+            where World: QueryMutFrom<'a, T>,
         {
             pub fn iter_mut(&'a mut self) -> impl Iterator<Item = T> + 'a {
                 self.query.iter_mut(self.world)
             }
         }
+        impl<'a, T> WithQuery<'a, T>
+            where World: QueryFrom<'a, T>,
+        {
+            pub fn iter(&'a self) -> impl Iterator<Item = T> + 'a {
+                self.query.iter(self.world)
+            }
+        }
 
         impl World {
-            fn with_query<'a, T: 'a>(&'a mut self, query: Query<T>) -> WithQuery<'a, T>
+            fn with_query_mut<'a, T: 'a>(&'a mut self, query: Query<T>) -> WithQueryMut<'a, T>
+            where
+                World: QueryMutFrom<'a, T>,
+            {
+                WithQueryMut {
+                    query: query,
+                    world: self,
+                }
+            }
+        }
+        impl World {
+            fn with_query<'a, T: 'a>(&'a self, query: Query<T>) -> WithQuery<'a, T>
             where
                 World: QueryFrom<'a, T>,
             {
@@ -103,7 +133,15 @@ pub fn generate_world_rs(
             id: usize
         }
         impl World {
-            fn query<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+            fn query_mut<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+            where
+                World: QueryMutFrom<'a, T>,
+            {
+                QueryMutFrom::<T>::query_mut_from(self)
+            }
+        }
+        impl World {
+            fn query<'a, T: 'a>(&'a self) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryFrom<'a, T>,
             {
@@ -144,7 +182,17 @@ pub fn generate_world_rs(
 
         world_rs.push(quote! {
             impl #archetype_type {
-                fn query<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+                fn query_mut<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+                where
+                    #archetype_type: QueryMutFrom<'a, T>,
+                {
+                    QueryMutFrom::<T>::query_mut_from(self)
+                }
+            }
+        });
+        world_rs.push(quote! {
+            impl #archetype_type {
+                fn query<'a, T: 'a>(&'a self) -> impl Iterator<Item = T> + 'a
                 where
                     #archetype_type: QueryFrom<'a, T>,
                 {
@@ -236,11 +284,15 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
         use zero_ecs::chain;
 
         pub trait QueryFrom<'a, T> {
-            fn query_from(&'a mut self) -> impl Iterator<Item = T>;
+            fn query_from(&'a self) -> impl Iterator<Item = T>;
+        }
+        pub trait QueryMutFrom<'a, T> {
+            fn query_mut_from(&'a mut self) -> impl Iterator<Item = T>;
         }
     });
 
     for query in collected.queries.iter() {
+        let mutable = query.mutable_fields.iter().count() > 0;
         let matching_entities: Vec<&EntityDef> = collected
             .entities
             .iter()
@@ -323,35 +375,66 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
 
             let archetype_type = fident!(singular_to_plural(&entity.name));
 
+            if mutable {
+                code_rs.push(quote! {
+                    #[allow(unused_parens)]
+                    impl<'a> QueryMutFrom<'a, (#(#data_types),*)> for #archetype_type {
+                        fn query_mut_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
+                            izip!(#(#field_quotes),*)
+                        }
+                    }
+                })
+            } else {
+                code_rs.push(quote! {
+                    #[allow(unused_parens)]
+                    impl<'a> QueryFrom<'a, (#(#data_types),*)> for #archetype_type {
+                        fn query_from(&'a self) -> impl Iterator<Item = (#(#data_types),*)> {
+                            izip!(#(#field_quotes),*)
+                        }
+                    }
+                })
+            }
+        }
+
+        if mutable {
+            let chain_args: Vec<_> = matching_entities
+                .iter()
+                .map(|entity| {
+                    let property_name = format_ident!(
+                        "{}",
+                        singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                    );
+                    quote! { self.#property_name.query_mut() }
+                })
+                .collect();
             code_rs.push(quote! {
                 #[allow(unused_parens)]
-                impl<'a> QueryFrom<'a, (#(#data_types),*)> for #archetype_type {
-                    fn query_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
-                        izip!(#(#field_quotes),*)
+                impl<'a> QueryMutFrom<'a, (#(#data_types),*)> for World {
+                    fn query_mut_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
+                        chain!(#(#chain_args),*)
+                    }
+                }
+            })
+        } else {
+            let chain_args: Vec<_> = matching_entities
+                .iter()
+                .map(|entity| {
+                    let property_name = format_ident!(
+                        "{}",
+                        singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                    );
+                    quote! { self.#property_name.query() }
+                })
+                .collect();
+            code_rs.push(quote! {
+                #[allow(unused_parens)]
+                impl<'a> QueryFrom<'a, (#(#data_types),*)> for World {
+                    fn query_from(&'a self) -> impl Iterator<Item = (#(#data_types),*)> {
+                        chain!(#(#chain_args),*)
                     }
                 }
             })
         }
-
-        let chain_args: Vec<_> = matching_entities
-            .iter()
-            .map(|entity| {
-                let property_name = format_ident!(
-                    "{}",
-                    singular_to_plural(&pascal_case_to_snake_case(&entity.name))
-                );
-                quote! { self.#property_name.query() }
-            })
-            .collect();
-
-        code_rs.push(quote! {
-            #[allow(unused_parens)]
-            impl<'a> QueryFrom<'a, (#(#data_types),*)> for World {
-                fn query_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
-                    chain!(#(#chain_args),*)
-                }
-            }
-        })
     }
 
     let code_rs = quote! {
