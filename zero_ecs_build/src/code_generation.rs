@@ -187,6 +187,8 @@ pub fn generate_world_rs(
         }
     });
 
+    let mut match_destroy_rs = vec![];
+
     for entity in collected.entities.iter() {
         let entity_name = &entity.name;
         let field_name = fident!(singular_to_plural(&pascal_case_to_snake_case(entity_name)));
@@ -277,7 +279,50 @@ pub fn generate_world_rs(
                 }
             }
         });
+
+        let pop_and_drop_code = entity.fields.iter().map(|field| {
+            let field_name = format_ident!("{}", singular_to_plural(&field.name));
+            let component_field_name = format_ident!("{}", singular_to_plural(&field.name));
+            quote! {
+                self.#component_field_name.swap(old_index, last_index);
+                self.#component_field_name.pop();
+            }
+        });
+
+        world_rs.push(quote! {
+            impl #archetype_type {
+                fn destroy(&mut self, entity: Entity) {
+                    if let Some(&Some(old_index)) = self.index_lookup.get(entity.id) {
+                        self.index_lookup[entity.id] = None;
+
+                        let last_index = self.entities.len() - 1;
+
+                        if old_index != last_index {
+                            let last_entity = self.entities[last_index];
+
+                            #(#pop_and_drop_code)*
+
+                            self.index_lookup[last_entity.id] = Some(old_index);
+                        }
+                    }
+                }
+            }
+        });
+
+        match_destroy_rs.push(quote! {
+            EntityType::#entity_name => self.#field_name.destroy(entity),
+        });
     }
+
+    world_rs.push(quote! {
+        impl World {
+            fn destroy(&mut self, entity: Entity) {
+                match entity.entity_type {
+                    #(#match_destroy_rs)*
+                }
+            }
+        }
+    });
 
     world_rs.push(quote! {
         #[derive(Default, Debug)]
