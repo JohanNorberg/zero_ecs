@@ -66,42 +66,6 @@ fn count_types(
     }
 }
 
-pub trait GetMutFrom<'a, T> {
-    fn get_mut_from(&'a mut self, entity: Entity) -> Option<T>;
-}
-
-impl<'a> GetMutFrom<'a, (&'a mut Position, &'a Velocity)> for Enemies {
-    fn get_mut_from(&'a mut self, entity: Entity) -> Option<(&'a mut Position, &'a Velocity)> {
-        if let Some(Some(index)) = self.index_lookup.get(entity.id) {
-            let index = *index;
-            Some((self.positions.get_mut(index)?, self.velocities.get(index)?))
-        } else {
-            None
-        }
-    }
-}
-
-#[allow(unused_parens)]
-impl<'a> GetMutFrom<'a, (&'a Name)> for Enemies {
-    fn get_mut_from(&'a mut self, entity: Entity) -> Option<(&'a Name)> {
-        if let Some(Some(index)) = self.index_lookup.get(entity.id) {
-            Some((self.names.get(*index)?))
-        } else {
-            None
-        }
-    }
-}
-
-#[allow(unused_parens)]
-impl<'a> GetMutFrom<'a, (&'a Name)> for World {
-    fn get_mut_from(&'a mut self, entity: Entity) -> Option<(&'a Name)> {
-        match entity.entity_type {
-            EntityType::Enemy => self.enemies.get_mut_from(entity),
-            _ => None,
-        }
-    }
-}
-
 fn main() {
     println!("Hello, world!");
 
@@ -130,24 +94,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_query() {
-        let mut world = World::default();
-        let t = world.query::<&mut Position>();
-    }
-
-    #[test]
     fn test_create_entities() {
         let mut world = World::default();
         let e = world.create(Enemy {
             position: Position(0.0, 0.0),
             velocity: Velocity(1.0, 1.0),
             name: Name("test".into()),
+            ..Default::default()
         });
         let f = world.create(Flower {
             position: Position(1.0, 0.0),
+            ..Default::default()
         });
         let f1 = world.create(Flower {
             position: Position(0.0, 0.0),
+            ..Default::default()
         });
 
         assert!(matches!(e.entity_type, EntityType::Enemy));
@@ -158,11 +119,11 @@ mod tests {
         assert_eq!(0, f.id);
         assert_eq!(1, f1.id);
 
-        let name: Option<&Name> = world.get_mut_from(e);
+        let name: Option<&Name> = world.get_from(e);
         assert!(name.is_some());
         let name = &name.unwrap().0;
         assert_eq!("test", name);
-        let name: Option<&Name> = world.get_mut_from(f);
+        let name: Option<&Name> = world.get_from(f);
         assert!(name.is_none());
     }
 }
