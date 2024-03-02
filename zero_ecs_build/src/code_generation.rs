@@ -289,6 +289,8 @@ pub fn generate_world_rs(
             }
         });
 
+        let pop_and_drop_code_copy = pop_and_drop_code.clone();
+
         world_rs.push(quote! {
             impl #archetype_type {
                 fn destroy(&mut self, entity: Entity) {
@@ -303,6 +305,8 @@ pub fn generate_world_rs(
                             #(#pop_and_drop_code)*
 
                             self.index_lookup[last_entity.id] = Some(old_index);
+                        } else {
+                            #(#pop_and_drop_code_copy)*
                         }
                     }
                 }
@@ -454,7 +458,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     self.#field_name.iter_mut()
                 });
                 get_quotes.push(quote! {
-                    self.#field_name.get_mut(entity.id)?
+                    self.#field_name.get_mut(index)?
                 });
             }
             for field in query.const_fields.iter() {
@@ -472,7 +476,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     self.#field_name.iter()
                 });
                 get_quotes.push(quote! {
-                    self.#field_name.get(entity.id)?
+                    self.#field_name.get(index)?
                 });
             }
 
@@ -488,7 +492,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             izip!(#(#field_quotes),*)
                         }
                         fn get_mut_from(&'a mut self, entity: Entity) -> Option<(#(#data_types),*)> {
-                            if let Some(Some(index)) = self.index_lookup.get(entity.id) {
+                            if let Some(&Some(index)) = self.index_lookup.get(entity.id) {
                                 Some((#(#get_quotes),*))
                             } else {
                                 None
@@ -507,7 +511,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             izip!(#(#field_quotes),*)
                         }
                         fn get_from(&'a self, entity: Entity) -> Option<(#(#data_types),*)> {
-                            if let Some(Some(index)) = self.index_lookup.get(entity.id) {
+                            if let Some(&Some(index)) = self.index_lookup.get(entity.id) {
                                 Some((#(#get_quotes),*))
                             } else {
                                 None

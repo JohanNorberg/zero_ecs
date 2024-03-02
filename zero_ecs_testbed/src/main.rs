@@ -29,6 +29,11 @@ struct Enemy {
 }
 
 #[entity]
+struct NameEntity {
+    name: Name,
+}
+
+#[entity]
 struct Flower {
     position: Position,
     flower_tag: FlowerTag,
@@ -52,38 +57,6 @@ fn get_name(world: &World, query: Query<&Name>, entity: Entity) -> Option<String
 
 #[system]
 fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {}
-
-/*impl Flowers {
-    fn destroy(&mut self, entity: Entity) {
-        // swap and pop destroy
-        if let Some(&Some(old_index)) = self.index_lookup.get(entity.id) {
-            self.index_lookup[entity.id] = None;
-
-            let last_index = self.entities.len() - 1;
-
-            if old_index != last_index {
-                let last_entity = self.entities[last_index];
-
-                self.entities.swap(old_index, last_index);
-                self.entities.pop();
-
-                self.flower_tags.swap(old_index, last_index);
-                self.flower_tags.pop();
-
-                self.index_lookup[last_entity.id] = Some(old_index);
-            }
-        }
-    }
-}
-
-impl World {
-    fn destroy(&mut self, entity: Entity) {
-        match entity.entity_type {
-            EntityType::Enemy => self.enemies.destroy(entity),
-            EntityType::Flower => self.flowers.destroy(entity),
-        }
-    }
-}*/
 
 #[system]
 fn count_types(
@@ -161,5 +134,49 @@ mod tests {
         assert_eq!("test", name);
         let name: Option<&Name> = world.get_from(f);
         assert!(name.is_none());
+    }
+
+    #[test]
+    fn test_create_and_destroy_entity() {
+        let mut world = World::default();
+        // test creating 5 enemies, 100 times,
+        for _ in 0..100 {
+            let entity_ids: Vec<_> = (0..5)
+                .map(|index| {
+                    let enemy_name = format!("enemy_{}", index);
+                    world.create(NameEntity {
+                        name: Name(enemy_name),
+                        ..Default::default()
+                    })
+                })
+                .collect();
+
+            {
+                let entity_id = entity_ids[1];
+                world.destroy(entity_id);
+                let try_get: Option<&Name> = world.get_from(entity_id);
+                assert!(try_get.is_none());
+            }
+            {
+                let entity_id = entity_ids[3];
+                world.destroy(entity_id);
+                let try_get: Option<&Name> = world.get_from(entity_id);
+                assert!(try_get.is_none());
+            }
+
+            // assert that get on destroyed enemies return None
+            // assert that not destroyed enemies exist, and that they are named correctly
+            for (index, entity_id) in entity_ids.iter().enumerate() {
+                let name: Option<&Name> = world.get_from(*entity_id);
+
+                if index == 1 || index == 3 {
+                    assert!(name.is_none());
+                } else {
+                    assert!(name.is_some());
+                    let name = &name.unwrap().0;
+                    assert_eq!(&format!("enemy_{}", index), name);
+                }
+            }
+        }
     }
 }
