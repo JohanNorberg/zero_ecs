@@ -35,30 +35,29 @@ pub fn generate_ecs(source_regex: &str) {
 
     let out_dir = std::env::var("OUT_DIR").unwrap();
 
-    let mut collected_datas: Vec<CollectedData> = vec![];
+    let mut collected_data = CollectedData::default();
 
     for file in files_to_look_in {
         let collected = collect_data(&file);
-        collected_datas.push(collected);
+
+        collected_data.entities.extend(collected.entities);
+        collected_data.queries.extend(collected.queries);
     }
 
-    let main_rs_path = Path::new(&manifest_dir).join("src/main.rs");
-    let mut collected = collect_data(main_rs_path.to_str().unwrap());
-
-    collected.entities.iter_mut().for_each(|entity| {
+    collected_data.entities.iter_mut().for_each(|entity| {
         entity.fields.push(Field {
             name: "entity".into(),
             data_type: "Entity".into(),
         })
     });
 
-    collected.retain_unique_queries();
+    collected_data.retain_unique_queries();
 
-    debug!("{:?}", collected);
+    debug!("{:?}", collected_data);
 
     include_files.push(generate_default_queries(&out_dir));
-    generate_world_rs(&out_dir, &mut include_files, &collected);
-    generate_queries(&out_dir, &mut include_files, &collected);
+    generate_world_rs(&out_dir, &mut include_files, &collected_data);
+    generate_queries(&out_dir, &mut include_files, &collected_data);
 
     let main_file = Path::new(&out_dir).join("zero_ecs.rs");
 

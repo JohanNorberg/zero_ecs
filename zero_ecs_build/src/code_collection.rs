@@ -19,7 +19,7 @@ pub struct Field {
     pub data_type: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CollectedData {
     pub entities: Vec<EntityDef>,
     pub queries: Vec<Query>,
