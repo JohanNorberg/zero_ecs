@@ -42,12 +42,48 @@ fn print_positions(world: &mut World, query: Query<&mut Position>) {
 }
 
 #[system]
-fn get_name(world: &mut World, query: Query<&Name>) -> String {
-    "".into()
+fn get_name(world: &World, query: Query<&Name>, entity: Entity) -> Option<String> {
+    if let Some(name) = world.with_query(query).get(entity) {
+        Some(name.0.to_string())
+    } else {
+        None
+    }
 }
 
 #[system]
 fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {}
+
+/*impl Flowers {
+    fn destroy(&mut self, entity: Entity) {
+        // swap and pop destroy
+        if let Some(&Some(old_index)) = self.index_lookup.get(entity.id) {
+            self.index_lookup[entity.id] = None;
+
+            let last_index = self.entities.len() - 1;
+
+            if old_index != last_index {
+                let last_entity = self.entities[last_index];
+
+                self.entities.swap(old_index, last_index);
+                self.entities.pop();
+
+                self.flower_tags.swap(old_index, last_index);
+                self.flower_tags.pop();
+
+                self.index_lookup[last_entity.id] = Some(old_index);
+            }
+        }
+    }
+}
+
+impl World {
+    fn destroy(&mut self, entity: Entity) {
+        match entity.entity_type {
+            EntityType::Enemy => self.enemies.destroy(entity),
+            EntityType::Flower => self.flowers.destroy(entity),
+        }
+    }
+}*/
 
 #[system]
 fn count_types(
