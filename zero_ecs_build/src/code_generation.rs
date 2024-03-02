@@ -27,12 +27,20 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         use std::marker::PhantomData;
 
 
-        #[derive(Default, Debug)]
-        struct AQuery<T> {
+        #[derive(Default, Debug, Copy, Clone)]
+        struct Query<T> {
             phantom: PhantomData<T>,
         }
 
-        impl<'a, T: 'a> AQuery<T> {
+        impl<T> Query<T> {
+            fn new() -> Query<T> {
+                Query {
+                    phantom: PhantomData,
+                }
+            }
+        }
+
+        impl<'a, T: 'a> Query<T> {
             fn iter_mut(&self, world: &'a mut World) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryFrom<'a, T>,
@@ -41,28 +49,26 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
 
-        pub struct Query<'a, T> {
-            a_query: AQuery<T>,
+        pub struct WithQuery<'a, T> {
+            query: Query<T>,
             world: &'a mut World,
         }
 
-        impl<'a, T> Query<'a, T>
+        impl<'a, T> WithQuery<'a, T>
             where World: QueryFrom<'a, T>,
         {
             pub fn iter_mut(&'a mut self) -> impl Iterator<Item = T> + 'a {
-                self.a_query.iter_mut(self.world)
+                self.query.iter_mut(self.world)
             }
         }
 
         impl World {
-            fn get_query<'a, T: 'a>(&'a mut self) -> Query<'a, T>
+            fn with_query<'a, T: 'a>(&'a mut self, query: Query<T>) -> WithQuery<'a, T>
             where
                 World: QueryFrom<'a, T>,
             {
-                Query {
-                    a_query: AQuery {
-                        phantom: PhantomData,
-                    },
+                WithQuery {
+                    query: query,
                     world: self,
                 }
             }
@@ -338,14 +344,11 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             })
             .collect();
 
-        let test = chain_args.iter().next().unwrap();
-
         code_rs.push(quote! {
             #[allow(unused_parens)]
             impl<'a> QueryFrom<'a, (#(#data_types),*)> for World {
                 fn query_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
                     chain!(#(#chain_args),*)
-                    //#test
                 }
             }
         })

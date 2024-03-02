@@ -28,12 +28,13 @@ pub fn component(_: TokenStream, input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 #[allow(non_snake_case)]
 pub fn system(_: TokenStream, input: TokenStream) -> TokenStream {
-    let input_fn = parse_macro_input!(input as ItemFn);
-    quote! {
-        #[make_mut]
-        #input_fn
-    }
-    .into()
+    //let input_fn = parse_macro_input!(input as ItemFn);
+    //quote! {
+    //    #[make_mut]
+    //    #input_fn
+    //}
+    //.into()
+    input
 }
 
 #[proc_macro_attribute]
