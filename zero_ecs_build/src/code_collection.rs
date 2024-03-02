@@ -1,4 +1,8 @@
-use std::fs;
+use std::{
+    collections::HashSet,
+    fs,
+    hash::{DefaultHasher, Hash, Hasher},
+};
 
 use quote::ToTokens;
 use syn::{Fields, Item, ItemFn, Meta, PathArguments, Type};
@@ -20,10 +24,37 @@ pub struct CollectedData {
     pub entities: Vec<EntityDef>,
     pub queries: Vec<Query>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Query {
     pub mutable_fields: Vec<String>,
     pub const_fields: Vec<String>,
+}
+
+impl PartialEq for Query {
+    fn eq(&self, other: &Self) -> bool {
+        self.mutable_fields == other.mutable_fields && self.const_fields == other.const_fields
+    }
+}
+
+impl Eq for Query {}
+
+impl Hash for Query {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.mutable_fields.hash(state);
+        self.const_fields.hash(state);
+    }
+}
+
+impl CollectedData {
+    pub fn retain_unique_queries(&mut self) {
+        let mut seen = HashSet::new();
+        self.queries.retain(|query| {
+            let mut hasher = DefaultHasher::new();
+            query.hash(&mut hasher);
+            let hash = hasher.finish();
+            seen.insert(hash)
+        });
+    }
 }
 pub fn collect_data(path: &str) -> CollectedData {
     let mut entities = vec![];

@@ -40,8 +40,14 @@ struct Flower {
 }
 
 #[system]
-fn print_positions(world: &mut World, query: Query<&mut Position>) {
-    world.with_query_mut(query).iter_mut().for_each(|mut pos| {
+fn print_positions(world: &mut World, query: Query<&Position>) {
+    world.with_query(query).iter().for_each(|pos| {
+        println!("Position: {:?}", pos);
+    });
+}
+#[system]
+fn print_positions_copy(world: &mut World, query: Query<&Position>) {
+    world.with_query(query).iter().for_each(|pos| {
         println!("Position: {:?}", pos);
     });
 }
