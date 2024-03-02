@@ -4,44 +4,35 @@ mod file;
 mod macros;
 
 use quote::quote;
-use regex::Regex;
 use std::io::Write;
 use std::{env, fs, path::Path};
-use walkdir::WalkDir;
 
 pub use code_collection::*;
 pub use code_generation::*;
 pub use file::*;
+use glob::glob;
 
-pub fn generate_ecs(source_regex: &str) {
-    let pattern = match Regex::new(source_regex) {
-        Ok(r) => r,
-        Err(e) => {
-            panic!("Invalid regex pattern: {}", e);
-        }
-    };
+pub fn generate_ecs(source_glob: &str) {
     let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("could not get manifest dir");
-
-    let files_to_look_in: Vec<_> = WalkDir::new(&manifest_dir)
-        .into_iter()
-        .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
-        .filter(|e| pattern.is_match(e.path().to_str().unwrap()))
-        // map to string
-        .map(|e| e.path().to_str().unwrap().to_string())
-        .collect();
-
+    let pattern = format!("{}/{}", manifest_dir, source_glob);
     let mut include_files = vec![];
 
     let out_dir = std::env::var("OUT_DIR").unwrap();
 
     let mut collected_data = CollectedData::default();
 
-    for file in files_to_look_in {
-        let collected = collect_data(&file);
+    for file in glob(&pattern).expect("invalid glob") {
+        match file {
+            Ok(path) => {
+                let path_str = path.display().to_string();
 
-        collected_data.entities.extend(collected.entities);
-        collected_data.queries.extend(collected.queries);
+                let collected = collect_data(&path_str);
+
+                collected_data.entities.extend(collected.entities);
+                collected_data.queries.extend(collected.queries);
+            }
+            Err(e) => eprintln!("Error processing path: {}", e),
+        }
     }
 
     collected_data.entities.iter_mut().for_each(|entity| {
