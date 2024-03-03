@@ -88,9 +88,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "2.0.51"
+version = "2.0.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ab617d94515e94ae53b8406c628598680aa0c9587474ecbe58188f7b345d66c"
+checksum = "b699d15b36d1f02c3e7c69f8ffef53de37aefae075d8488d4ba1a7788d574a07"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -105,7 +105,7 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "zero_ecs"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "itertools",
  "rayon",
@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "zero_ecs_build"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "glob",
  "itertools",
@@ -125,7 +125,7 @@ dependencies = [
 
 [[package]]
 name = "zero_ecs_macros"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "quote",
  "syn",
@@ -133,7 +133,7 @@ dependencies = [
 
 [[package]]
 name = "zero_ecs_testbed"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "zero_ecs",
  "zero_ecs_build",

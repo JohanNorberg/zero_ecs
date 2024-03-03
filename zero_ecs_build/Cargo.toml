@@ -1,6 +1,6 @@
 [package]
 name = "zero_ecs_build"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Build scripts for: ZeroECS: an Entity Component System (ECS), using only zero-cost abstractions"
 repository = "https://github.com/JohanNorberg/zero_ecs"
@@ -14,7 +14,7 @@ readme = "README.md"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zero_ecs_macros = { path = "../zero_ecs_macros", version = "0.1.0" }
+zero_ecs_macros = { path = "../zero_ecs_macros", version = "0.1.2" }
 syn = { version = "2.0.51", features = ["full"] }
 quote = "1.0.35"
 itertools = "0.12.1"

@@ -1,6 +1,6 @@
 [package]
 name = "zero_ecs_testbed"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 publish = false
 
@@ -10,4 +10,4 @@ publish = false
 zero_ecs = { path = "../zero_ecs", version = "0.1.0" }
 
 [build-dependencies]
-zero_ecs_build = { path = "../zero_ecs_build", version = "0.1.0" }
+zero_ecs_build = { path = "../zero_ecs_build", version = "0.1.2" }
