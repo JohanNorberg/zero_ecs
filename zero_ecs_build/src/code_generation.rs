@@ -50,11 +50,27 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
         impl<'a, T: 'a> Query<T> {
+            fn par_iter(&self, world: &'a World) -> impl ParallelIterator<Item = T> + 'a
+            where
+                World: QueryFrom<'a, T>,
+            {
+                world.par_query_from()
+            }
+        }
+        impl<'a, T: 'a> Query<T> {
             fn iter_mut(&self, world: &'a mut World) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryMutFrom<'a, T>,
             {
                 world.query_mut_from()
+            }
+        }
+        impl<'a, T: 'a> Query<T> {
+            fn par_iter_mut(&self, world: &'a mut World) -> impl ParallelIterator<Item = T> + 'a
+            where
+                World: QueryMutFrom<'a, T>,
+            {
+                world.par_query_mut_from()
             }
         }
         impl<'a, T: 'a> Query<T> {
@@ -89,6 +105,9 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             pub fn iter_mut(&'a mut self) -> impl Iterator<Item = T> + 'a {
                 self.query.iter_mut(self.world)
             }
+            pub fn par_iter_mut(&'a mut self) -> impl ParallelIterator<Item = T> + 'a {
+                self.query.par_iter_mut(self.world)
+            }
             pub fn get_mut(&'a mut self, entity: Entity) -> Option<T> {
                 self.query.get_mut(self.world, entity)
             }
@@ -98,6 +117,9 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         {
             pub fn iter(&'a self) -> impl Iterator<Item = T> + 'a {
                 self.query.iter(self.world)
+            }
+            pub fn par_iter(&'a self) -> impl ParallelIterator<Item = T> + 'a {
+                self.query.par_iter(self.world)
             }
             pub fn get(&'a self, entity: Entity) -> Option<T> {
                 self.query.get(self.world, entity)
@@ -162,6 +184,13 @@ pub fn generate_world_rs(
             {
                 QueryMutFrom::<T>::query_mut_from(self)
             }
+            fn par_query_mut<'a, T: 'a>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
+            where
+                World: QueryMutFrom<'a, T>,
+            {
+                QueryMutFrom::<T>::par_query_mut_from(self)
+            }
+
             fn get_mut<'a, T: 'a>(&'a mut self, entity: Entity) -> Option<T>
             where
                 World: QueryMutFrom<'a, T>,
@@ -175,6 +204,12 @@ pub fn generate_world_rs(
                 World: QueryFrom<'a, T>,
             {
                 QueryFrom::<T>::query_from(self)
+            }
+            fn par_query<'a, T: 'a>(&'a self) -> impl ParallelIterator<Item = T> + 'a
+            where
+                World: QueryFrom<'a, T>,
+            {
+                QueryFrom::<T>::par_query_from(self)
             }
             fn get<'a, T: 'a>(&'a self, entity: Entity) -> Option<T>
             where
@@ -225,6 +260,12 @@ pub fn generate_world_rs(
                 {
                     QueryMutFrom::<T>::query_mut_from(self)
                 }
+                fn par_query_mut<'a, T: 'a>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
+                where
+                    #archetype_type: QueryMutFrom<'a, T>,
+                {
+                    QueryMutFrom::<T>::par_query_mut_from(self)
+                }
                 fn get_mut<'a, T: 'a>(&'a mut self, entity: Entity) -> Option<T>
                 where
                     #archetype_type: QueryMutFrom<'a, T>,
@@ -240,6 +281,12 @@ pub fn generate_world_rs(
                     #archetype_type: QueryFrom<'a, T>,
                 {
                     QueryFrom::<T>::query_from(self)
+                }
+                fn par_query<'a, T: 'a>(&'a self) -> impl ParallelIterator<Item = T> + 'a
+                where
+                    #archetype_type: QueryFrom<'a, T>,
+                {
+                    QueryFrom::<T>::par_query_from(self)
                 }
                 fn get<'a, T: 'a>(&'a self, entity: Entity) -> Option<T>
                 where
@@ -381,10 +428,12 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
 
         pub trait QueryFrom<'a, T> {
             fn query_from(&'a self) -> impl Iterator<Item = T>;
+            fn par_query_from(&'a self) -> impl ParallelIterator<Item = T>;
             fn get_from(&'a self, entity: Entity) -> Option<T>;
         }
         pub trait QueryMutFrom<'a, T> {
             fn query_mut_from(&'a mut self) -> impl Iterator<Item = T>;
+            fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = T>;
             fn get_mut_from(&'a mut self, entity: Entity) -> Option<T>;
         }
     });
@@ -442,6 +491,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             let entity_name = fident!(entity.name);
 
             let mut field_quotes = vec![];
+            let mut par_field_quotes = vec![];
             let mut get_quotes = vec![];
 
             for field in query.mutable_fields.iter() {
@@ -457,6 +507,9 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
 
                 field_quotes.push(quote! {
                     self.#field_name.iter_mut()
+                });
+                par_field_quotes.push(quote! {
+                    self.#field_name.par_iter_mut()
                 });
                 get_quotes.push(quote! {
                     self.#field_name.get_mut(index)?
@@ -476,6 +529,9 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                 field_quotes.push(quote! {
                     self.#field_name.iter()
                 });
+                par_field_quotes.push(quote! {
+                    self.#field_name.par_iter()
+                });
                 get_quotes.push(quote! {
                     self.#field_name.get(index)?
                 });
@@ -491,6 +547,9 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     impl<'a> QueryMutFrom<'a, (#(#data_types),*)> for #archetype_type {
                         fn query_mut_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
                             izip!(#(#field_quotes),*)
+                        }
+                        fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
+                            izip!(#(#par_field_quotes),*)
                         }
                         fn get_mut_from(&'a mut self, entity: Entity) -> Option<(#(#data_types),*)> {
                             if let Some(&Some(index)) = self.index_lookup.get(entity.id) {
@@ -510,6 +569,9 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     impl<'a> QueryFrom<'a, (#(#data_types),*)> for #archetype_type {
                         fn query_from(&'a self) -> impl Iterator<Item = (#(#data_types),*)> {
                             izip!(#(#field_quotes),*)
+                        }
+                        fn par_query_from(&'a self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
+                            izip!(#(#par_field_quotes),*)
                         }
                         fn get_from(&'a self, entity: Entity) -> Option<(#(#data_types),*)> {
                             if let Some(&Some(index)) = self.index_lookup.get(entity.id) {
@@ -537,11 +599,24 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     quote! { self.#property_name.query_mut() }
                 })
                 .collect();
+            let par_chain_args: Vec<_> = matching_entities
+                .iter()
+                .map(|entity| {
+                    let property_name = format_ident!(
+                        "{}",
+                        singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                    );
+                    quote! { self.#property_name.par_query_mut() }
+                })
+                .collect();
             code_rs.push(quote! {
                 #[allow(unused_parens)]
                 impl<'a> QueryMutFrom<'a, (#(#data_types),*)> for World {
                     fn query_mut_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
                         chain!(#(#chain_args),*)
+                    }
+                    fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
+                        chain!(#(#par_chain_args),*)
                     }
                     #[allow(unreachable_patterns)]
                     fn get_mut_from(&'a mut self, entity: Entity) -> Option<(#(#data_types),*)> {
@@ -563,11 +638,24 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     quote! { self.#property_name.query() }
                 })
                 .collect();
+            let par_chain_args: Vec<_> = matching_entities
+                .iter()
+                .map(|entity| {
+                    let property_name = format_ident!(
+                        "{}",
+                        singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                    );
+                    quote! { self.#property_name.par_query() }
+                })
+                .collect();
             code_rs.push(quote! {
                 #[allow(unused_parens)]
                 impl<'a> QueryFrom<'a, (#(#data_types),*)> for World {
                     fn query_from(&'a self) -> impl Iterator<Item = (#(#data_types),*)> {
                         chain!(#(#chain_args),*)
+                    }
+                    fn par_query_from(&'a self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
+                        chain!(#(#par_chain_args),*)
                     }
                     #[allow(unreachable_patterns)]
                     fn get_from(&'a self, entity: Entity) -> Option<(#(#data_types),*)> {
