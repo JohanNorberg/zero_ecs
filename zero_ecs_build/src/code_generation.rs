@@ -167,6 +167,7 @@ pub fn generate_world_rs(
     });
 
     world_rs.push(quote! {
+        use zero_ecs::*;
         #[derive(Debug, Clone, Copy)]
         enum EntityType {
             #(#entity_types),*
@@ -423,6 +424,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
     let mut code_rs = vec![];
 
     code_rs.push(quote! {
+        //use zero_ecs::ParallelIterator;
         use zero_ecs::izip;
         use zero_ecs::chain;
 
@@ -549,7 +551,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             izip!(#(#field_quotes),*)
                         }
                         fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
-                            izip!(#(#par_field_quotes),*)
+                            izip_par!(#(#par_field_quotes),*)
                         }
                         fn get_mut_from(&'a mut self, entity: Entity) -> Option<(#(#data_types),*)> {
                             if let Some(&Some(index)) = self.index_lookup.get(entity.id) {
@@ -571,7 +573,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             izip!(#(#field_quotes),*)
                         }
                         fn par_query_from(&'a self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
-                            izip!(#(#par_field_quotes),*)
+                            izip_par!(#(#par_field_quotes),*)
                         }
                         fn get_from(&'a self, entity: Entity) -> Option<(#(#data_types),*)> {
                             if let Some(&Some(index)) = self.index_lookup.get(entity.id) {
@@ -616,7 +618,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                         chain!(#(#chain_args),*)
                     }
                     fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
-                        chain!(#(#par_chain_args),*)
+                        chain_par!(#(#par_chain_args),*)
                     }
                     #[allow(unreachable_patterns)]
                     fn get_mut_from(&'a mut self, entity: Entity) -> Option<(#(#data_types),*)> {
@@ -655,7 +657,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                         chain!(#(#chain_args),*)
                     }
                     fn par_query_from(&'a self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
-                        chain!(#(#par_chain_args),*)
+                        chain_par!(#(#par_chain_args),*)
                     }
                     #[allow(unreachable_patterns)]
                     fn get_from(&'a self, entity: Entity) -> Option<(#(#data_types),*)> {
