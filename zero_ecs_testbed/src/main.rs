@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_mut, unused_variables, unused_imports)]
-
 // include main_ecs.rs
 include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 
@@ -54,10 +52,13 @@ fn print_positions_copy(world: &mut World, query: Query<&Position>) {
 
 #[system]
 fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {
-    for (mut pos, vel) in world.with_query_mut(query).iter_mut() {
-        pos.0 += vel.0;
-        pos.1 += vel.1;
-    }
+    world
+        .with_query_mut(query)
+        .par_iter_mut()
+        .for_each(|(pos, vel)| {
+            pos.0 += vel.0;
+            pos.1 += vel.1;
+        });
 }
 
 #[system]
@@ -80,16 +81,12 @@ fn print_names_with_resources(world: &mut World, query: Query<&Name>, resources:
 }
 
 #[system]
-fn count_types(
-    world: &mut World,
-    mut enemy_query: Query<&EnemyTag>,
-    mut flower_query: Query<&FlowerTag>,
-) {
+fn count_types(world: &mut World, enemy_query: Query<&EnemyTag>, flower_query: Query<&FlowerTag>) {
     let mut test = 0;
-    for e in world.with_query(enemy_query).iter() {
+    for _ in world.with_query(enemy_query).iter() {
         test += 1;
         println!("enemy: {}", test);
-        for f in world.with_query(flower_query).iter() {
+        for _ in world.with_query(flower_query).iter() {
             test += 1;
             println!("flower: {}", test);
         }
@@ -114,17 +111,37 @@ fn main() {
         ..Default::default()
     });
 
-    //print_positions(&mut world, Query::new());
-    //count_types(&mut world, Query::new(), Query::new());
-
     systems_main(&mut world);
     systems_last(&mut world);
+
+    world.destroy(e);
+    world.destroy(f);
+    world.destroy(f1);
 }
 
 // create some unit tests
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parallel_iteration() {
+        // create an Enemy with position, run apply velocity, check that position is updated
+        let mut world = World::default();
+        let e = world.create(Enemy {
+            position: Position(0.0, 0.0),
+            velocity: Velocity(1.0, 1.0),
+            ..Default::default()
+        });
+
+        apply_velocity(&mut world, Query::new());
+
+        let pos: Option<&Position> = world.get_from(e);
+        assert!(pos.is_some());
+        let pos = pos.unwrap();
+        assert_eq!(1.0, pos.0);
+        assert_eq!(1.0, pos.1);
+    }
 
     #[test]
     fn test_create_entities() {
