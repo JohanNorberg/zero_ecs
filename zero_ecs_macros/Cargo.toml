@@ -2,13 +2,13 @@
 name = "zero_ecs_macros"
 version = "0.1.1"
 edition = "2021"
-description = "Procedural macros for ZeroECS, a zero-cost abstraction ECS in Rust."
+description = "Procedural macros for Build scripts for: ZeroECS: an Entity Component System (ECS), using only zero-cost abstractions"
 repository = "https://github.com/JohanNorberg/zero_ecs"
 documentation = "https://github.com/JohanNorberg/zero_ecs#readme"
 license = "MIT OR Apache-2.0"
 authors = ["Johan Norberg <johan.norberg@jepono.se>"]
 keywords = ["ecs", "entity-component-system", "zero-cost-abstractions"]
-categories = ["game-development", "development-tools::cargo-plugins"]
+categories = ["game-development", "data-structures"]
 readme = "README.md"
 
 [lib]
