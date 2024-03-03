@@ -7,7 +7,7 @@ repository = "https://github.com/JohanNorberg/zero_ecs"
 documentation = "https://github.com/JohanNorberg/zero_ecs#readme"
 license = "MIT OR Apache-2.0"
 authors = ["Johan Norberg <johan.norberg@jepono.se>"]
-keywords = ["ecs", "entity-component-system", "zero-cost-abstractions"]
+keywords = ["ecs", "zero_ecs"]
 categories = ["game-development", "data-structures"]
 readme = "README.md"
 
