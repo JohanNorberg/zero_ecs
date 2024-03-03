@@ -131,6 +131,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
 
+        #[allow(dead_code)]
         impl World {
             fn with_query_mut<'a, T: 'a + Send>(&'a mut self, query: Query<T>) -> WithQueryMut<'a, T>
             where
@@ -142,6 +143,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
                 }
             }
         }
+        #[allow(dead_code)]
         impl World {
             fn with_query<'a, T: 'a + Send>(&'a self, query: Query<T>) -> WithQuery<'a, T>
             where
@@ -183,6 +185,7 @@ pub fn generate_world_rs(
             entity_type: EntityType,
             id: usize
         }
+        #[allow(dead_code)]
         impl World {
             fn query_mut<'a, T: 'a + Send>(&'a mut self) -> impl Iterator<Item = T> + 'a
             where
@@ -204,6 +207,7 @@ pub fn generate_world_rs(
                 QueryMutFrom::<T>::get_mut_from(self, entity)
             }
         }
+        #[allow(dead_code)]
         impl World {
             fn query<'a, T: 'a + Send>(&'a self) -> impl Iterator<Item = T> + 'a
             where
@@ -259,6 +263,7 @@ pub fn generate_world_rs(
         });
 
         world_rs.push(quote! {
+            #[allow(dead_code)]
             impl #archetype_type {
                 fn query_mut<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
                 where
@@ -284,6 +289,7 @@ pub fn generate_world_rs(
             }
         });
         world_rs.push(quote! {
+            #[allow(dead_code)]
             impl #archetype_type {
                 fn query<'a, T: 'a>(&'a self) -> impl Iterator<Item = T> + 'a
                 where
@@ -352,6 +358,7 @@ pub fn generate_world_rs(
         let pop_and_drop_code_copy = pop_and_drop_code.clone();
 
         world_rs.push(quote! {
+            #[allow(dead_code)]
             impl #archetype_type {
                 fn destroy(&mut self, entity: Entity) {
                     if let Some(&Some(old_index)) = self.index_lookup.get(entity.id) {
@@ -379,6 +386,7 @@ pub fn generate_world_rs(
     }
 
     world_rs.push(quote! {
+        #[allow(dead_code)]
         impl World {
             fn destroy(&mut self, entity: Entity) {
                 match entity.entity_type {

@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_mut, unused_variables, unused_imports)]
-
 // include main_ecs.rs
 include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 
@@ -83,16 +81,12 @@ fn print_names_with_resources(world: &mut World, query: Query<&Name>, resources:
 }
 
 #[system]
-fn count_types(
-    world: &mut World,
-    mut enemy_query: Query<&EnemyTag>,
-    mut flower_query: Query<&FlowerTag>,
-) {
+fn count_types(world: &mut World, enemy_query: Query<&EnemyTag>, flower_query: Query<&FlowerTag>) {
     let mut test = 0;
-    for e in world.with_query(enemy_query).iter() {
+    for _ in world.with_query(enemy_query).iter() {
         test += 1;
         println!("enemy: {}", test);
-        for f in world.with_query(flower_query).iter() {
+        for _ in world.with_query(flower_query).iter() {
             test += 1;
             println!("flower: {}", test);
         }
@@ -117,11 +111,12 @@ fn main() {
         ..Default::default()
     });
 
-    //print_positions(&mut world, Query::new());
-    //count_types(&mut world, Query::new(), Query::new());
-
     systems_main(&mut world);
     systems_last(&mut world);
+
+    world.destroy(e);
+    world.destroy(f);
+    world.destroy(f1);
 }
 
 // create some unit tests
