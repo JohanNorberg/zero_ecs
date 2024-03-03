@@ -2,6 +2,14 @@
 name = "zero_ecs_build"
 version = "0.1.1"
 edition = "2021"
+description = "Build scripts for: ZeroECS: an Entity Component System (ECS), using only zero-cost abstractions"
+repository = "https://github.com/JohanNorberg/zero_ecs"
+documentation = "https://github.com/JohanNorberg/zero_ecs#readme"
+license = "MIT OR Apache-2.0"
+authors = ["Johan Norberg <johan.norberg@jepono.se>"]
+keywords = ["ecs", "entity-component-system", "zero-cost-abstractions"]
+categories = ["game-development", "data-structures"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
