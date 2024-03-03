@@ -54,10 +54,13 @@ fn print_positions_copy(world: &mut World, query: Query<&Position>) {
 
 #[system]
 fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {
-    for (mut pos, vel) in world.with_query_mut(query).iter_mut() {
-        pos.0 += vel.0;
-        pos.1 += vel.1;
-    }
+    world
+        .with_query_mut(query)
+        .par_iter_mut()
+        .for_each(|(pos, vel)| {
+            pos.0 += vel.0;
+            pos.1 += vel.1;
+        });
 }
 
 #[system]
@@ -125,6 +128,25 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parallel_iteration() {
+        // create an Enemy with position, run apply velocity, check that position is updated
+        let mut world = World::default();
+        let e = world.create(Enemy {
+            position: Position(0.0, 0.0),
+            velocity: Velocity(1.0, 1.0),
+            ..Default::default()
+        });
+
+        apply_velocity(&mut world, Query::new());
+
+        let pos: Option<&Position> = world.get_from(e);
+        assert!(pos.is_some());
+        let pos = pos.unwrap();
+        assert_eq!(1.0, pos.0);
+        assert_eq!(1.0, pos.1);
+    }
 
     #[test]
     fn test_create_entities() {
