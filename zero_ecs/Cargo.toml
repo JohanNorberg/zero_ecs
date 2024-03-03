@@ -2,6 +2,7 @@
 name = "zero_ecs"
 version = "0.1.1"
 edition = "2021"
+publish = false
 
 [dependencies]
 zero_ecs_macros = { path = "../zero_ecs_macros", version = "0.1.0" }
