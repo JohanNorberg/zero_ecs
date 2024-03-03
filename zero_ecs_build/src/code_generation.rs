@@ -724,7 +724,12 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
 
         let mut call_params: HashMap<(String, String), SystemDefParamReference> = HashMap::new();
 
-        for system in collected.systems.iter().filter(|s| &s.group == *group) {
+        for system in collected
+            .systems
+            .iter()
+            .filter(|s| &s.group == *group)
+            .sorted_by(|a, b| a.name.cmp(&b.name))
+        {
             let mut params_rs = vec![];
 
             for param in system.params.iter() {
@@ -764,7 +769,16 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
 
         let function_name = format_ident!("systems_{}", group);
 
-        let call_params_rs = call_params.iter().map(|(_, r)| {
+        // get values of call_params, ignoring the key
+        let call_params: Vec<_> = call_params.iter().map(|(_, v)| v).collect();
+
+        // order call_params by name
+        let call_params = call_params
+            .iter()
+            .sorted_by(|a, b| a.name.cmp(&b.name))
+            .collect::<Vec<_>>();
+
+        let call_params_rs = call_params.iter().map(|r| {
             let name = fident!(r.name);
             let ty = fident!(r.ty);
 
