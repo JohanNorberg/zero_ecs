@@ -43,7 +43,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
 
         impl<'a, T: 'a + Send> Query<T>
         {
-            fn iter(&self, world: &'a World) -> impl Iterator<Item = T> + 'a
+            pub fn iter(&self, world: &'a World) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryFrom<'a, T>,
             {
@@ -52,7 +52,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         }
         impl<'a, T: 'a + Send> Query<T>
         {
-            fn par_iter(&self, world: &'a World) -> impl ParallelIterator<Item = T> + 'a
+            pub fn par_iter(&self, world: &'a World) -> impl ParallelIterator<Item = T> + 'a
             where
                 World: QueryFrom<'a, T>,
             {
@@ -60,7 +60,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
         impl<'a, T: 'a + Send> Query<T> {
-            fn iter_mut(&self, world: &'a mut World) -> impl Iterator<Item = T> + 'a
+            pub fn iter_mut(&self, world: &'a mut World) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryMutFrom<'a, T>,
             {
@@ -69,7 +69,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         }
         impl<'a, T: 'a + Send> Query<T>
         {
-            fn par_iter_mut(&self, world: &'a mut World) -> impl ParallelIterator<Item = T> + 'a
+            pub fn par_iter_mut(&self, world: &'a mut World) -> impl ParallelIterator<Item = T> + 'a
             where
                 World: QueryMutFrom<'a, T>,
             {
@@ -77,7 +77,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
         impl<'a, T: 'a + Send> Query<T> {
-            fn get(&self, world: &'a World, entity: Entity) -> Option<T>
+            pub fn get(&self, world: &'a World, entity: Entity) -> Option<T>
             where
                 World: QueryFrom<'a, T>,
             {
@@ -85,7 +85,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
         impl<'a, T: 'a + Send> Query<T> {
-            fn get_mut(&self, world: &'a mut World, entity: Entity) -> Option<T>
+            pub fn get_mut(&self, world: &'a mut World, entity: Entity) -> Option<T>
             where
                 World: QueryMutFrom<'a, T>,
             {
@@ -133,7 +133,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
 
         #[allow(dead_code)]
         impl World {
-            fn with_query_mut<'a, T: 'a + Send>(&'a mut self, query: Query<T>) -> WithQueryMut<'a, T>
+            pub fn with_query_mut<'a, T: 'a + Send>(&'a mut self, query: Query<T>) -> WithQueryMut<'a, T>
             where
                 World: QueryMutFrom<'a, T>,
             {
@@ -145,7 +145,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         }
         #[allow(dead_code)]
         impl World {
-            fn with_query<'a, T: 'a + Send>(&'a self, query: Query<T>) -> WithQuery<'a, T>
+            pub fn with_query<'a, T: 'a + Send>(&'a self, query: Query<T>) -> WithQuery<'a, T>
             where
                 World: QueryFrom<'a, T>,
             {
@@ -187,20 +187,20 @@ pub fn generate_world_rs(
         }
         #[allow(dead_code)]
         impl World {
-            fn query_mut<'a, T: 'a + Send>(&'a mut self) -> impl Iterator<Item = T> + 'a
+            pub fn query_mut<'a, T: 'a + Send>(&'a mut self) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryMutFrom<'a, T>,
             {
                 QueryMutFrom::<T>::query_mut_from(self)
             }
-            fn par_query_mut<'a, T: 'a + Send>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
+            pub fn par_query_mut<'a, T: 'a + Send>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
             where
                 World: QueryMutFrom<'a, T>,
             {
                 QueryMutFrom::<T>::par_query_mut_from(self)
             }
 
-            fn get_mut<'a, T: 'a + Send>(&'a mut self, entity: Entity) -> Option<T>
+            pub fn get_mut<'a, T: 'a + Send>(&'a mut self, entity: Entity) -> Option<T>
             where
                 World: QueryMutFrom<'a, T>,
             {
@@ -209,26 +209,26 @@ pub fn generate_world_rs(
         }
         #[allow(dead_code)]
         impl World {
-            fn query<'a, T: 'a + Send>(&'a self) -> impl Iterator<Item = T> + 'a
+            pub fn query<'a, T: 'a + Send>(&'a self) -> impl Iterator<Item = T> + 'a
             where
                 World: QueryFrom<'a, T>,
             {
                 QueryFrom::<T>::query_from(self)
             }
-            fn par_query<'a, T: 'a + Send>(&'a self) -> impl ParallelIterator<Item = T> + 'a
+            pub fn par_query<'a, T: 'a + Send>(&'a self) -> impl ParallelIterator<Item = T> + 'a
             where
                 World: QueryFrom<'a, T>,
             {
                 QueryFrom::<T>::par_query_from(self)
             }
-            fn get<'a, T: 'a + Send>(&'a self, entity: Entity) -> Option<T>
+            pub fn get<'a, T: 'a + Send>(&'a self, entity: Entity) -> Option<T>
             where
                 World: QueryFrom<'a, T>,
             {
                 QueryFrom::<T>::get_from(self, entity)
             }
         }
-        trait WorldCreate<T> {
+        pub trait WorldCreate<T> {
             fn create(&mut self, e: T) -> Entity;
         }
     });
