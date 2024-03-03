@@ -30,6 +30,7 @@ pub fn generate_ecs(source_glob: &str) {
 
                 collected_data.entities.extend(collected.entities);
                 collected_data.queries.extend(collected.queries);
+                collected_data.systems.extend(collected.systems);
             }
             Err(e) => eprintln!("Error processing path: {}", e),
         }
@@ -44,11 +45,12 @@ pub fn generate_ecs(source_glob: &str) {
 
     collected_data.retain_unique_queries();
 
-    debug!("{:?}", collected_data);
+    //debug!("{:?}", collected_data);
 
     include_files.push(generate_default_queries(&out_dir));
     generate_world_rs(&out_dir, &mut include_files, &collected_data);
     generate_queries(&out_dir, &mut include_files, &collected_data);
+    generate_systems(&out_dir, &mut include_files, &collected_data);
 
     let main_file = Path::new(&out_dir).join("zero_ecs.rs");
 

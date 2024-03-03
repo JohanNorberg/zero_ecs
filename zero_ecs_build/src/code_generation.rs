@@ -12,6 +12,7 @@ use itertools::Itertools;
 use quote::format_ident;
 use quote::quote;
 use quote::ToTokens;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use std::process::Command;
@@ -587,6 +588,98 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
     include_files.push(write_token_stream_to_file(
         out_dir,
         "implementations.rs",
+        &code_rs.to_string(),
+    ));
+}
+pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collected: &CollectedData) {
+    let mut code_rs = vec![];
+
+    // distinct groups
+    let groups: Vec<_> = collected
+        .systems
+        .iter()
+        .map(|s| &s.group)
+        .unique()
+        .collect();
+
+    //debug!("{:?}", groups);
+
+    for group in groups.iter() {
+        let mut calls = vec![];
+
+        let mut call_params: HashMap<(String, String), SystemDefParamReference> = HashMap::new();
+
+        for system in collected.systems.iter().filter(|s| &s.group == *group) {
+            let mut params_rs = vec![];
+
+            for param in system.params.iter() {
+                match param {
+                    SystemDefParam::Query(name) => {
+                        params_rs.push(quote! {
+                            Query::new(),
+                        });
+                    }
+                    SystemDefParam::Reference(reference) => {
+                        let name = fident!(reference.name);
+
+                        params_rs.push(quote! {
+                            #name,
+                        });
+
+                        let key = (reference.name.clone(), reference.ty.clone());
+                        let item = reference.clone();
+                        call_params
+                            .entry(key)
+                            .and_modify(|e| {
+                                if reference.mutable {
+                                    e.mutable = true;
+                                }
+                            })
+                            .or_insert(item);
+                    }
+                }
+            }
+
+            let system_function_name = fident!(&system.name);
+
+            calls.push(quote! {
+                #system_function_name(#(#params_rs)*);
+            })
+        }
+
+        let function_name = format_ident!("systems_{}", group);
+
+        let call_params_rs = call_params.iter().map(|(_, r)| {
+            let name = fident!(r.name);
+            let ty = fident!(r.ty);
+
+            if r.mutable {
+                quote! {
+                   #name: &mut #ty
+                }
+            } else {
+                quote! {
+
+                    #name: &#ty
+                }
+            }
+        });
+
+        code_rs.push(quote! {
+            #[allow(private_interfaces)]
+            pub fn #function_name(#(#call_params_rs),*) {
+                #(#calls)*
+            }
+        })
+    }
+
+    let code_rs = quote! {
+        #(#code_rs)*
+    };
+
+    include_files.push(write_token_stream_to_file(
+        out_dir,
+        "systems.rs",
         &code_rs.to_string(),
     ));
 }

@@ -3,7 +3,7 @@
 // include main_ecs.rs
 include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 
-use zero_ecs::{component, entity, make_mut, system};
+use zero_ecs::{component, entity, system};
 
 #[component]
 struct Position(f32, f32);
@@ -45,7 +45,7 @@ fn print_positions(world: &mut World, query: Query<&Position>) {
         println!("Position: {:?}", pos);
     });
 }
-#[system]
+#[system(group=last)]
 fn print_positions_copy(world: &mut World, query: Query<&Position>) {
     world.with_query(query).iter().for_each(|pos| {
         println!("Position: {:?}", pos);
@@ -53,16 +53,31 @@ fn print_positions_copy(world: &mut World, query: Query<&Position>) {
 }
 
 #[system]
-fn get_name(world: &World, query: Query<&Name>, entity: Entity) -> Option<String> {
-    if let Some(name) = world.with_query(query).get(entity) {
-        Some(name.0.to_string())
-    } else {
-        None
+fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {
+    for (mut pos, vel) in world.with_query_mut(query).iter_mut() {
+        pos.0 += vel.0;
+        pos.1 += vel.1;
     }
 }
 
 #[system]
-fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {}
+fn print_names(world: &mut World, query: Query<&Name>) {
+    world.with_query(query).iter().for_each(|name| {
+        println!("Name: {:?}", name);
+    });
+}
+
+#[derive(Debug, Default)]
+struct Resources {
+    test: i32,
+}
+
+#[system(group = with_resources)]
+fn print_names_with_resources(world: &mut World, query: Query<&Name>, resources: &Resources) {
+    world.with_query(query).iter().for_each(|name| {
+        println!("Name: {:?}, test: {}", name, resources.test);
+    });
+}
 
 #[system]
 fn count_types(
@@ -99,8 +114,11 @@ fn main() {
         ..Default::default()
     });
 
-    print_positions(&mut world, Query::new());
-    count_types(&mut world, Query::new(), Query::new());
+    //print_positions(&mut world, Query::new());
+    //count_types(&mut world, Query::new(), Query::new());
+
+    systems_main(&mut world);
+    systems_last(&mut world);
 }
 
 // create some unit tests
