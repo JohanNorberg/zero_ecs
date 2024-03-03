@@ -114,7 +114,7 @@ dependencies = [
 
 [[package]]
 name = "zero_ecs_build"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "glob",
  "itertools",

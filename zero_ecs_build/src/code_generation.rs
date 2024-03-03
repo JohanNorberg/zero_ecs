@@ -29,7 +29,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
 
 
         #[derive(Default, Debug, Copy, Clone)]
-        struct Query<T> {
+        pub struct Query<T> {
             phantom: PhantomData<T>,
         }
 
