@@ -237,3 +237,81 @@ Get is identical to query but takes an Entity.
 
 Let's say you wanted an entity that follows a player. This is how you could implement that:
 
+Define a component for the companion
+```
+#[component]
+struct CompanionComponent {
+    follow_entity: Option<Entity>,
+}
+```
+
+Define the Companion Entity. It has a position and a companion component:
+```
+#[entity]
+struct Companion {
+    position: Position,
+    companion_component: CompanionComponent,
+}
+```
+
+The companion system. 
+This becomes a little bit trickier.
+In rust we can either have one mutable reference or many immutable references. 
+In this example it means we can't modify the companion's position inside the loop, 
+
+This does not compile:
+
+```
+#[system]
+fn companion_follow_does_not_compile(
+    world: &mut World,
+    companions: Query<(&mut Position, &CompanionComponent)>,
+    positions: Query<&Position>,
+) {
+    for (pos, companion) in world.with_query_mut(companions).iter_mut() {
+        if let Some(follow_entity) = companion.follow_entity {
+            if let Some(follow_position) = world.with_query(positions).get(follow_entity) {
+                pos.0 = follow_position.0;
+                pos.1 = follow_position.1;
+            }
+        }
+    }
+}
+```
+
+**Note: In future, if Without is implemented this could be possible if the second "positions" query queries for Without<CompanionComponent>. This is not yet implemented though. **
+
+Instead just like with the collisions earlier, we collect what actions should be taken, and then execute them.
+
+```
+#[system]
+fn companion_follow(
+    world: &mut World,
+    companions: Query<(&Entity, &CompanionComponent)>,
+    positions: Query<&Position>,
+    mut_positions: Query<&mut Position>,
+) {
+    let follow: Vec<(Entity, (f32, f32))> = world
+        .with_query(companions)
+        .iter()
+        .filter_map(|(companion_entity, companion)| {
+            if let Some(follow_entity) = companion.follow_entity {
+                if let Some(target_position) = world.with_query(positions).get(follow_entity) {
+                    Some((*companion_entity, (target_position.0, target_position.1)))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    for (comp_entity, (x, y)) in follow {
+        if let Some(companion_position) = world.with_query_mut(mut_positions).get_mut(comp_entity) {
+            companion_position.0 = x;
+            companion_position.1 = y;
+        }
+    }
+}
+```
