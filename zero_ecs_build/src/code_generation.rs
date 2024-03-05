@@ -28,11 +28,20 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         use std::marker::PhantomData;
 
 
-        #[derive(Default, Debug, Copy, Clone)]
+        #[derive(Default, Debug, Copy)]
         pub struct Query<T> {
             phantom: PhantomData<T>,
         }
 
+        impl<T> Clone for Query<T> {
+            fn clone(&self) -> Self {
+                Query {
+                    phantom: PhantomData,
+                }
+            }
+        }
+
+        #[allow(dead_code)]
         impl<T> Query<T> {
             fn new() -> Query<T> {
                 Query {
@@ -180,6 +189,7 @@ pub fn generate_world_rs(
             #(#entity_types),*
         }
 
+        #[allow(dead_code)]
         #[derive(Debug, Clone, Copy)]
         pub struct Entity {
             entity_type: EntityType,
@@ -444,6 +454,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
 
     code_rs.push(quote! {
         //use zero_ecs::ParallelIterator;
+        #[allow(unused_imports)]
         use zero_ecs::izip;
         use zero_ecs::chain;
 
