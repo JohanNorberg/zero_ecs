@@ -51,6 +51,7 @@ pub fn generate_ecs(source_glob: &str) {
     generate_world_rs(&out_dir, &mut include_files, &collected_data);
     generate_queries(&out_dir, &mut include_files, &collected_data);
     generate_systems(&out_dir, &mut include_files, &collected_data);
+    generate_copy_traits(&out_dir, &mut include_files, &collected_data);
 
     let main_file = Path::new(&out_dir).join("zero_ecs.rs");
 

@@ -28,11 +28,20 @@ pub fn generate_default_queries(out_dir: &str) -> String {
         use std::marker::PhantomData;
 
 
-        #[derive(Default, Debug, Copy, Clone)]
+        #[derive(Default, Debug)]
         pub struct Query<T> {
             phantom: PhantomData<T>,
         }
 
+        impl<T> Clone for Query<T> {
+            fn clone(&self) -> Self {
+                Query {
+                    phantom: PhantomData,
+                }
+            }
+        }
+
+        #[allow(dead_code)]
         impl<T> Query<T> {
             fn new() -> Query<T> {
                 Query {
@@ -180,6 +189,7 @@ pub fn generate_world_rs(
             #(#entity_types),*
         }
 
+        #[allow(dead_code)]
         #[derive(Debug, Clone, Copy)]
         pub struct Entity {
             entity_type: EntityType,
@@ -444,6 +454,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
 
     code_rs.push(quote! {
         //use zero_ecs::ParallelIterator;
+        #[allow(unused_imports)]
         use zero_ecs::izip;
         use zero_ecs::chain;
 
@@ -809,6 +820,55 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
     include_files.push(write_token_stream_to_file(
         out_dir,
         "systems.rs",
+        &code_rs.to_string(),
+    ));
+}
+pub fn generate_copy_traits(
+    out_dir: &str,
+    include_files: &mut Vec<String>,
+    collected: &CollectedData,
+) {
+    let mut code_rs = vec![];
+
+    code_rs.push(quote! {});
+
+    for q in collected.queries.iter() {
+        let mut data_types = vec![];
+
+        for field in q.mutable_fields.iter() {
+            let field_data_type = fident!(field);
+            data_types.push(quote! {
+                &mut #field_data_type
+            });
+        }
+
+        for field in q.const_fields.iter() {
+            let field_data_type = fident!(field);
+            data_types.push(quote! {
+                &#field_data_type
+            });
+        }
+
+        if data_types.len() > 1 {
+            code_rs.push(quote! {
+                impl Copy for Query<(#(#data_types),*)> {}
+            });
+        } else {
+            if let Some(data_type) = data_types.iter().next() {
+                code_rs.push(quote! {
+                    impl Copy for Query<#data_type> {}
+                });
+            }
+        }
+    }
+
+    let code_rs = quote! {
+        #(#code_rs)*
+    };
+
+    include_files.push(write_token_stream_to_file(
+        out_dir,
+        "copy_traits.rs",
         &code_rs.to_string(),
     ));
 }
