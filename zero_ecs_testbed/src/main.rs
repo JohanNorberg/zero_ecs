@@ -102,10 +102,10 @@ fn mutate_position_twice(world: &mut World, query: Query<&mut Position>) {
         pos.1 *= 0.99;
     });
 
-    /*world.with_query_mut(query).iter_mut().for_each(|pos| {
+    world.with_query_mut(query).iter_mut().for_each(|pos| {
         pos.0 *= 0.99;
         pos.1 *= 0.99;
-    });*/
+    });
 }
 
 fn main() {

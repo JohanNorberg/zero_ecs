@@ -270,6 +270,12 @@ pub fn generate_world_rs(
                 next_id: usize,
                 index_lookup: Vec<Option<usize>>,
             }
+
+            impl #archetype_type {
+                fn len(&self) -> usize {
+                    self.entities.len()
+                }
+            }
         });
 
         world_rs.push(quote! {
@@ -465,6 +471,8 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             fn query_from(&'a self) -> impl Iterator<Item = T>;
             fn par_query_from(&'a self) -> impl ParallelIterator<Item = T>;
             fn get_from(&'a self, entity: Entity) -> Option<T>;
+            fn len(&'a self) -> usize;
+            fn at(&'a self, index: usize) -> Option<T>;
         }
         pub trait QueryMutFrom<'a, T>
         where
@@ -473,6 +481,8 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             fn query_mut_from(&'a mut self) -> impl Iterator<Item = T>;
             fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = T>;
             fn get_mut_from(&'a mut self, entity: Entity) -> Option<T>;
+            fn len(&'a self) -> usize;
+            fn at_mut(&'a mut self, index: usize) -> Option<T>;
         }
     });
 
@@ -596,6 +606,14 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                                 None
                             }
                         }
+                        fn len(&self) -> usize {
+                            todo!();
+                        }
+                        fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
+                        {
+                            todo!();
+                            None
+                        }
                     }
                 });
                 match_get_rs.push(quote! {
@@ -617,6 +635,15 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             } else {
                                 None
                             }
+                        }
+                        fn len(&self) -> usize {
+                            todo!();
+                            0
+                        }
+                        fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
+                        {
+                            todo!();
+                            None
                         }
                     }
                 });
@@ -663,6 +690,14 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             _ => None
                         }
                     }
+                        fn len(&self) -> usize {
+                            todo!();
+                        }
+                        fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
+                        {
+                            todo!();
+                            None
+                        }
                 }
             })
         } else {
@@ -702,6 +737,15 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             _ => None
                         }
                     }
+                        fn len(&self) -> usize {
+                            todo!();
+                            0
+                        }
+                        fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
+                        {
+                            todo!();
+                            None
+                        }
                 }
             })
         }
