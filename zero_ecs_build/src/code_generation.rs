@@ -607,12 +607,11 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             }
                         }
                         fn len(&self) -> usize {
-                            todo!();
+                            self.entities.len()
                         }
                         fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
                         {
-                            todo!();
-                            None
+                            Some((#(#get_quotes),*))
                         }
                     }
                 });
@@ -637,13 +636,11 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             }
                         }
                         fn len(&self) -> usize {
-                            todo!();
-                            0
+                            self.entities.len()
                         }
                         fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
                         {
-                            todo!();
-                            None
+                            Some((#(#get_quotes),*))
                         }
                     }
                 });
@@ -652,6 +649,16 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                 });
             }
         }
+        let sum_args: Vec<_> = matching_entities
+            .iter()
+            .map(|entity| {
+                let property_name = format_ident!(
+                    "{}",
+                    singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                );
+                quote! { self.#property_name.len() }
+            })
+            .collect();
 
         if mutable {
             let chain_args: Vec<_> = matching_entities
@@ -674,8 +681,27 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     quote! { self.#property_name.par_query_mut() }
                 })
                 .collect();
+            let at_mut_args: Vec<_> = matching_entities
+                .iter()
+                .map(|entity| {
+                    let property_name = format_ident!(
+                        "{}",
+                        singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                    );
+                    quote! {
+                        {
+                            let len = self.#property_name.len();
+                            if index < len {
+                                return self.#property_name.at_mut(index);
+                            }
+                            index -= len;
+                        }
+                    }
+                })
+                .collect();
+
             code_rs.push(quote! {
-                #[allow(unused_parens)]
+                #[allow(unused_parens, unused_variables, unused_assignments)]
                 impl<'a> QueryMutFrom<'a, (#(#data_types),*)> for World {
                     fn query_mut_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
                         chain!(#(#chain_args),*)
@@ -690,14 +716,15 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             _ => None
                         }
                     }
-                        fn len(&self) -> usize {
-                            todo!();
-                        }
-                        fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
-                        {
-                            todo!();
-                            None
-                        }
+                    fn len(&self) -> usize {
+                        sum!(#(#sum_args),*)
+                    }
+                    fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
+                    {
+                        let mut index = index;
+                        #(#at_mut_args)*
+                        None
+                    }
                 }
             })
         } else {
@@ -721,8 +748,26 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     quote! { self.#property_name.par_query() }
                 })
                 .collect();
+            let at_args: Vec<_> = matching_entities
+                .iter()
+                .map(|entity| {
+                    let property_name = format_ident!(
+                        "{}",
+                        singular_to_plural(&pascal_case_to_snake_case(&entity.name))
+                    );
+                    quote! {
+                        {
+                            let len = self.#property_name.len();
+                            if index < len {
+                                return self.#property_name.at(index);
+                            }
+                            index -= len;
+                        }
+                    }
+                })
+                .collect();
             code_rs.push(quote! {
-                #[allow(unused_parens)]
+                #[allow(unused_parens, unused_variables, unused_assignments)]
                 impl<'a> QueryFrom<'a, (#(#data_types),*)> for World {
                     fn query_from(&'a self) -> impl Iterator<Item = (#(#data_types),*)> {
                         chain!(#(#chain_args),*)
@@ -737,15 +782,15 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             _ => None
                         }
                     }
-                        fn len(&self) -> usize {
-                            todo!();
-                            0
-                        }
-                        fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
-                        {
-                            todo!();
-                            None
-                        }
+                    fn len(&self) -> usize {
+                        sum!(#(#sum_args),*)
+                    }
+                    fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
+                    {
+                        let mut index = index;
+                        #(#at_args)*
+                        None
+                    }
                 }
             })
         }

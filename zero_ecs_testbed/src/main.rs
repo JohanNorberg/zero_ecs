@@ -37,6 +37,11 @@ struct Flower {
     flower_tag: FlowerTag,
 }
 
+#[entity]
+struct EntityWithPosition {
+    position: Position,
+}
+
 #[system]
 fn print_positions(world: &mut World, query: Query<&Position>) {
     world.with_query(query).iter().for_each(|pos| {
