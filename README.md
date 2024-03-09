@@ -315,3 +315,40 @@ fn companion_follow(
     }
 }
 ```
+
+The problem with that code, I think, (needs to be confirmed through benchmarks), is that ist is slow. An alternative is to iterate using index instead, only retrieving what we need, and this way avoiding borrowing multiple references. 
+
+Here we 
+ - Start by iterating through all companions using index.
+ - Retrieve the positions we want to set our companion to. 
+ - Get and update the position component of the companion.
+
+```rust
+#[system]
+fn companion_follow(
+    world: &mut World,
+    companions: Query<(&mut Position, &CompanionComponent)>,
+    positions: Query<&Position>,
+) {
+    for companion_idx in 0..world.with_query_mut(companions).len() {
+        if let Some(follow_position) = world
+            .with_query_mut(companions)
+            .at_mut(companion_idx)
+            .and_then(|(_, companion)| companion.follow_entity)
+        {
+            if let Some(follow_position) = world
+                .with_query(positions)
+                .get(follow_position)
+                .and_then(|p| Some((p.0, p.1)))
+            {
+                if let Some((follower_position, _)) =
+                    world.with_query_mut(companions).at_mut(companion_idx)
+                {
+                    follower_position.0 = follow_position.0;
+                    follower_position.1 = follow_position.1;
+                }
+            }
+        }
+    }
+}
+```
