@@ -58,3 +58,11 @@ macro_rules! chain_par {
         }
     };
 }
+
+// found code for sum here: https://gist.github.com/jnordwick/1473d5533ca158d47ba4
+#[macro_export]
+macro_rules! sum {
+    ($h:expr) => ($h);              // so that this would be called, I ...
+    ($h:expr, $($t:expr),*) =>
+        (sum!($h) + sum!($($t),*)); // ...call sum! on both sides of the operation
+}

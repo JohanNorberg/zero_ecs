@@ -37,6 +37,11 @@ struct Flower {
     flower_tag: FlowerTag,
 }
 
+#[entity]
+struct EntityWithPosition {
+    position: Position,
+}
+
 #[system]
 fn print_positions(world: &mut World, query: Query<&Position>) {
     world.with_query(query).iter().for_each(|pos| {
@@ -73,6 +78,49 @@ struct Resources {
     test: i32,
 }
 
+#[component]
+struct FollowerComponent {
+    target_entity: Option<Entity>,
+}
+
+#[entity]
+struct FollowerEntity {
+    follower: FollowerComponent,
+    position: Position,
+}
+
+#[system]
+fn follower_update_position(
+    world: &mut World,
+    followers: Query<(&mut Position, &FollowerComponent)>,
+    positions: Query<&Position>, // This is all entities with a position. Including the followers, meaning followers can follow followers, and even themselfs.
+) {
+    // Iterate all followers using idx so we don't borrow world
+    for follower_idx in 0..world.with_query_mut(followers).len() {
+        // Get the target entity of the follower. Entity is just a lightweight ID that is copied.
+        if let Some(target_entity) = world
+            .with_query_mut(followers)
+            .at_mut(follower_idx)
+            .and_then(|(_, follower)| follower.target_entity)
+        {
+            // If the target entity exists, get its position
+            if let Some(target_position) = world
+                .with_query(positions)
+                .get(target_entity)
+                .and_then(|p| Some((p.0, p.1)))
+            {
+                // Get the position component of the follower and update its position with the target_position.
+                if let Some((follower_position, _)) =
+                    world.with_query_mut(followers).at_mut(follower_idx)
+                {
+                    follower_position.0 = target_position.0;
+                    follower_position.1 = target_position.1;
+                }
+            }
+        }
+    }
+}
+
 #[system(group = with_resources)]
 fn print_names_with_resources(world: &mut World, query: Query<&Name>, resources: &Resources) {
     world.with_query(query).iter().for_each(|name| {
@@ -102,10 +150,10 @@ fn mutate_position_twice(world: &mut World, query: Query<&mut Position>) {
         pos.1 *= 0.99;
     });
 
-    /*world.with_query_mut(query).iter_mut().for_each(|pos| {
+    world.with_query_mut(query).iter_mut().for_each(|pos| {
         pos.0 *= 0.99;
         pos.1 *= 0.99;
-    });*/
+    });
 }
 
 fn main() {
@@ -138,6 +186,40 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_followers() {
+        // create 10 entities, and 10 followers and make sure they get their target's position
+        let mut world = World::default();
+
+        let targets: Vec<_> = (0..10)
+            .map(|i| {
+                world.create(EntityWithPosition {
+                    position: Position(i as f32, i as f32),
+                })
+            })
+            .collect();
+
+        let followers = (0..10)
+            .map(|i| {
+                world.create(FollowerEntity {
+                    follower: FollowerComponent {
+                        target_entity: Some(targets[i]),
+                    },
+                    position: Position(0.0, 0.0),
+                })
+            })
+            .collect::<Vec<_>>();
+
+        follower_update_position(&mut world, Query::new(), Query::new());
+
+        for (i, follower) in followers.iter().enumerate() {
+            let target_position: &Position = world.get_from(targets[i]).unwrap();
+            let follower_position: &Position = world.get_from(*follower).unwrap();
+            assert_eq!(target_position.0, follower_position.0);
+            assert_eq!(target_position.1, follower_position.1);
+        }
+    }
 
     #[test]
     fn test_parallel_iteration() {
