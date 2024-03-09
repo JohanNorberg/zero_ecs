@@ -102,6 +102,37 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
         }
 
+        // implement len
+        impl<'a, T: 'a + Send> Query<T> {
+            pub fn len(&self, world: &'a World) -> usize
+            where
+                World: LenFrom<'a, T>,
+            {
+                world.len()
+            }
+        }
+
+        // impl at_mut
+        impl<'a, T: 'a + Send> Query<T> {
+            pub fn at_mut(&self, world: &'a mut World, index: usize) -> Option<T>
+            where
+                World: QueryMutFrom<'a, T>,
+            {
+                world.at_mut(index)
+            }
+        }
+
+        // impl at
+        impl<'a, T: 'a + Send> Query<T> {
+            pub fn at(&self, world: &'a World, index: usize) -> Option<T>
+            where
+                World: QueryFrom<'a, T>,
+            {
+                world.at(index)
+            }
+        }
+
+
         pub struct WithQueryMut<'a, T> {
             query: Query<T>,
             world: &'a mut World,
@@ -113,6 +144,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
 
         impl<'a, T> WithQueryMut<'a, T>
             where World: QueryMutFrom<'a, T>,
+                World: LenFrom<'a, T>,
                 T: 'a + Send,
         {
             pub fn iter_mut(&'a mut self) -> impl Iterator<Item = T> + 'a {
@@ -124,9 +156,16 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             pub fn get_mut(&'a mut self, entity: Entity) -> Option<T> {
                 self.query.get_mut(self.world, entity)
             }
+            pub fn len(&'a mut self) -> usize {
+                self.query.len(self.world)
+            }
+            pub fn at_mut(&'a mut self, index: usize) -> Option<T> {
+                self.query.at_mut(self.world, index)
+            }
         }
         impl<'a, T> WithQuery<'a, T>
             where World: QueryFrom<'a, T>,
+                World: LenFrom<'a, T>,
                 T: 'a + Send,
         {
             pub fn iter(&'a self) -> impl Iterator<Item = T> + 'a {
@@ -137,6 +176,12 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             }
             pub fn get(&'a self, entity: Entity) -> Option<T> {
                 self.query.get(self.world, entity)
+            }
+            pub fn len(&'a self) -> usize {
+                self.query.len(self.world)
+            }
+            pub fn at(&'a self, index: usize) -> Option<T> {
+                self.query.at(self.world, index)
             }
         }
 
@@ -464,6 +509,14 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
         use zero_ecs::izip;
         use zero_ecs::chain;
 
+        pub trait LenFrom<'a, T>
+        where
+            T: 'a + Send
+        {
+            fn len(&'a self) -> usize;
+        }
+
+
         pub trait QueryFrom<'a, T>
         where
             T: 'a + Send
@@ -471,7 +524,6 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             fn query_from(&'a self) -> impl Iterator<Item = T>;
             fn par_query_from(&'a self) -> impl ParallelIterator<Item = T>;
             fn get_from(&'a self, entity: Entity) -> Option<T>;
-            fn len(&'a self) -> usize;
             fn at(&'a self, index: usize) -> Option<T>;
         }
         pub trait QueryMutFrom<'a, T>
@@ -481,7 +533,6 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             fn query_mut_from(&'a mut self) -> impl Iterator<Item = T>;
             fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = T>;
             fn get_mut_from(&'a mut self, entity: Entity) -> Option<T>;
-            fn len(&'a self) -> usize;
             fn at_mut(&'a mut self, index: usize) -> Option<T>;
         }
     });
@@ -589,6 +640,15 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             let archetype_field_name =
                 fident!(singular_to_plural(&pascal_case_to_snake_case(&entity.name)));
 
+            code_rs.push(quote! {
+                #[allow(unused_parens)]
+                impl<'a> LenFrom<'a, (#(#data_types),*)> for #archetype_type {
+                    fn len(&'a self) -> usize {
+                        self.entities.len()
+                    }
+                }
+            });
+
             if mutable {
                 code_rs.push(quote! {
                     #[allow(unused_parens)]
@@ -605,9 +665,6 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             } else {
                                 None
                             }
-                        }
-                        fn len(&self) -> usize {
-                            self.entities.len()
                         }
                         fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
                         {
@@ -635,9 +692,6 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                                 None
                             }
                         }
-                        fn len(&self) -> usize {
-                            self.entities.len()
-                        }
                         fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
                         {
                             Some((#(#get_quotes),*))
@@ -659,6 +713,15 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                 quote! { self.#property_name.len() }
             })
             .collect();
+
+        code_rs.push(quote! {
+            #[allow(unused_parens, unused_variables, unused_assignments)]
+            impl<'a> LenFrom<'a, (#(#data_types),*)> for World {
+                fn len(&'a self) -> usize {
+                    sum!(#(#sum_args),*)
+                }
+            }
+        });
 
         if mutable {
             let chain_args: Vec<_> = matching_entities
@@ -715,9 +778,6 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             #(#match_get_rs)*
                             _ => None
                         }
-                    }
-                    fn len(&self) -> usize {
-                        sum!(#(#sum_args),*)
                     }
                     fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
                     {
@@ -781,9 +841,6 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             #(#match_get_rs)*
                             _ => None
                         }
-                    }
-                    fn len(&self) -> usize {
-                        sum!(#(#sum_args),*)
                     }
                     fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
                     {
