@@ -93,21 +93,23 @@ struct FollowerEntity {
 fn follower_update_position(
     world: &mut World,
     followers: Query<(&mut Position, &FollowerComponent)>,
-    others: Query<&Position>,
+    positions: Query<&Position>, // This is all entities with a position. Including the followers, meaning followers can follow followers, and even themselfs.
 ) {
+    // Iterate all followers using idx so we don't borrow world
     for follower_idx in 0..world.with_query_mut(followers).len() {
-        if let Some(target_entity) = {
-            if let Some((_, follower)) = world.with_query_mut(followers).at_mut(follower_idx) {
-                follower.target_entity
-            } else {
-                None
-            }
-        } {
+        // Get the target entity of the follower. Entity is just a lightweight ID that is copied.
+        if let Some(target_entity) = world
+            .with_query_mut(followers)
+            .at_mut(follower_idx)
+            .and_then(|(_, follower)| follower.target_entity)
+        {
+            // If the target entity exists, get its position
             if let Some(target_position) = world
-                .with_query(others)
+                .with_query(positions)
                 .get(target_entity)
-                .and_then(|position_component| Some((position_component.0, position_component.1)))
+                .and_then(|p| Some((p.0, p.1)))
             {
+                // Get the position component of the follower and update its position with the target_position.
                 if let Some((follower_position, _)) =
                     world.with_query_mut(followers).at_mut(follower_idx)
                 {
