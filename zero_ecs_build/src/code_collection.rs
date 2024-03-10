@@ -79,6 +79,8 @@ impl CollectedData {
         });
     }
 }
+
+#[allow(clippy::single_match)]
 pub fn collect_data(path: &str) -> CollectedData {
     let mut entities = vec![];
     let mut queries = vec![];
