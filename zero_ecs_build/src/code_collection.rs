@@ -156,21 +156,19 @@ pub fn collect_data(path: &str) -> CollectedData {
                                                         if let Some(arg) =
                                                             &arguments.args.iter().next()
                                                         {
-                                                            match arg {
-                                                                syn::GenericArgument::Type(ty) => {
-                                                                    if let Some(query) =
-                                                                        collect_query(ty)
-                                                                    {
-                                                                        queries.push(query);
-                                                                        system_def.params.push(
-                                                                            SystemDefParam::Query(
-                                                                                param_name
-                                                                                    .to_string(),
-                                                                            ),
-                                                                        );
-                                                                    }
+                                                            if let syn::GenericArgument::Type(ty) =
+                                                                arg
+                                                            {
+                                                                if let Some(query) =
+                                                                    collect_query(ty)
+                                                                {
+                                                                    queries.push(query);
+                                                                    system_def.params.push(
+                                                                        SystemDefParam::Query(
+                                                                            param_name.to_string(),
+                                                                        ),
+                                                                    );
                                                                 }
-                                                                _ => {}
                                                             }
                                                         }
                                                     }
