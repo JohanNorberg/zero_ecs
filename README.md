@@ -13,7 +13,7 @@ It achieves this by generating all code at compile time, using a combination of 
 Create a new project
 ```
 cargo new zero_ecs_example
-cd zero_ecs/example
+cd zero_ecs_example
 ```
 
 Add the dependencies
@@ -25,10 +25,10 @@ cargo add zero_ecs_build --build
 Your Cargo.toml should look something like this:
 ```
 [dependencies]
-zero_ecs = "0.1.2"
+zero_ecs = "*"
 
 [build-dependencies]
-zero_ecs_build = "0.1.2"
+zero_ecs_build = "*"
 ```
 
 Create `build.rs`
@@ -86,7 +86,7 @@ struct PlayerComponent;
 ### Entities
 
 Entities are a collection of components, they may also be reffered to as archetypes, or bundles, or game objects. 
-Not that once "in" the ECS. An Entity is simply an ID that can be copied.
+Note that once "in" the ECS. An Entity is simply an ID that can be copied.
 
 In our example, we define an enemy and a player, they both have position and velocity but can be differentiated by their "tag" components. 
 
@@ -316,7 +316,7 @@ fn companion_follow(
 }
 ```
 
-The problem with that code, I think, (needs to be confirmed through benchmarks), is that ist is slow. An alternative is to iterate using index instead, only retrieving what we need, and this way avoiding borrowing multiple references. 
+The problem with that code, I think, (needs to be confirmed through benchmarks), is that it is slow. An alternative is to iterate using index instead, only retrieving what we need, and this way avoiding borrowing multiple references. 
 
 Here we 
  - Start by iterating through all companions using index.
@@ -339,7 +339,7 @@ fn companion_follow(
             if let Some(follow_position) = world
                 .with_query(positions)
                 .get(follow_position)
-                .and_then(|p| Some((p.0, p.1)))
+                .map(|p| (p.0, p.1))
             {
                 if let Some((follower_position, _)) =
                     world.with_query_mut(companions).at_mut(companion_idx)
