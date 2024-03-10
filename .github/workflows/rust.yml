@@ -25,6 +25,10 @@ jobs:
     needs: build
     steps:
       - uses: actions/checkout@v3
+      - name: Configure Git # copied from here: https://stackoverflow.com/questions/69839851/github-actions-copy-git-user-name-and-user-email-from-last-commit
+        run: |
+          git config user.name "$(git log -n 1 --pretty=format:%an)" 
+          git config user.email "$(git log -n 1 --pretty=format:%ae)"
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
