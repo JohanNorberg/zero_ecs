@@ -482,9 +482,9 @@ pub fn generate_world_rs(
 pub fn singular_to_plural(name: &str) -> String {
     let last_char = name.chars().last().unwrap();
     if last_char == 'y' {
-        return format!("{}ies", &name[0..name.len() - 1]);
+        format!("{}ies", &name[0..name.len() - 1])
     } else {
-        return format!("{}s", name);
+        format!("{}s", name)
     }
 }
 pub fn pascal_case_to_snake_case(name: &str) -> String {
@@ -542,7 +542,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
     });
 
     for query in collected.queries.iter() {
-        let mutable = query.mutable_fields.iter().count() > 0;
+        let mutable = !query.mutable_fields.is_empty();
         let matching_entities: Vec<&EntityDef> = collected
             .entities
             .iter()
@@ -931,7 +931,7 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
         let function_name = format_ident!("systems_{}", group);
 
         // get values of call_params, ignoring the key
-        let call_params: Vec<_> = call_params.iter().map(|(_, v)| v).collect();
+        let call_params: Vec<_> = call_params.values().collect();
 
         // order call_params by name
         let call_params = call_params
@@ -1003,7 +1003,7 @@ pub fn generate_copy_traits(
             code_rs.push(quote! {
                 impl Copy for Query<(#(#data_types),*)> {}
             });
-        } else if let Some(data_type) = data_types.iter().next() {
+        } else if let Some(data_type) = data_types.first() {
             code_rs.push(quote! {
                 impl Copy for Query<#data_type> {}
             });

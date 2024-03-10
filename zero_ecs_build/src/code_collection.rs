@@ -84,10 +84,11 @@ pub fn collect_data(path: &str) -> CollectedData {
     let mut queries = vec![];
     let mut systems = vec![];
 
-    let content = fs::read_to_string(path).expect(format!("Unable to read file {}", path).as_str());
+    let content =
+        fs::read_to_string(path).unwrap_or_else(|_| panic!("Unable to read file {}", path));
 
     let parsed_file =
-        syn::parse_file(&content).expect(format!("Unable to parse file {}", path).as_str());
+        syn::parse_file(&content).unwrap_or_else(|_| panic!("Unable to parse file {}", path));
 
     for item in parsed_file.items {
         match item {
@@ -99,7 +100,7 @@ pub fn collect_data(path: &str) -> CollectedData {
                             if let Fields::Named(named_fields) = &item_struct.fields {
                                 for field in &named_fields.named {
                                     let field = field.to_token_stream().to_string();
-                                    let field = field.split(":").collect::<Vec<&str>>();
+                                    let field = field.split(':').collect::<Vec<&str>>();
                                     fields.push(Field {
                                         name: field[0].trim().to_string(),
                                         data_type: field[1].trim().to_string(),
@@ -264,7 +265,7 @@ fn collect_query(ty: &Type) -> Option<Query> {
     };
 
     if let Some(query) = query {
-        if query.mutable_fields.len() == 0 && query.const_fields.len() == 0 {
+        if query.mutable_fields.is_empty() && query.const_fields.is_empty() {
             None
         } else {
             Some(query)
