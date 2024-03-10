@@ -36,9 +36,7 @@ jobs:
           override: true
       - name: Install cargo-release
         run: cargo install cargo-release
-      - name: Publish to crates.io
+      - name: Release
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-        run: cargo publish
-      - name: Release
         run: cargo release --workspace patch --execute --no-confirm --no-verify
