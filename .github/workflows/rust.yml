@@ -37,4 +37,4 @@ jobs:
       - name: Release
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-        run: cargo release --workspace patch --execute --no-confirm --no-verify --no-push
+        run: cargo release --workspace patch --execute --no-confirm --no-verify
