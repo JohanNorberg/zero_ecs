@@ -107,7 +107,7 @@ fn follower_update_position(
             if let Some(target_position) = world
                 .with_query(positions)
                 .get(target_entity)
-                .and_then(|p| Some((p.0, p.1)))
+                .map(|p| (p.0, p.1))
             {
                 // Get the position component of the follower and update its position with the target_position.
                 if let Some((follower_position, _)) =
