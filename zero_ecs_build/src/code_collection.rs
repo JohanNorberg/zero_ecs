@@ -103,8 +103,15 @@ pub fn collect_data(path: &str) -> CollectedData {
                                 for field in &named_fields.named {
                                     let field = field.to_token_stream().to_string();
                                     let field = field.split(':').collect::<Vec<&str>>();
+
+                                    let field_name = field[0].trim().to_string();
+
+                                    // split on space and take last element
+                                    let field_name =
+                                        field_name.split(' ').last().unwrap().to_string();
+
                                     fields.push(Field {
-                                        name: field[0].trim().to_string(),
+                                        name: field_name,
                                         data_type: field[1].trim().to_string(),
                                     });
                                 }

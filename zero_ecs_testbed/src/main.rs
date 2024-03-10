@@ -4,7 +4,7 @@ include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 use zero_ecs::{component, entity, system};
 
 #[component]
-struct Position(f32, f32);
+pub struct Position(f32, f32);
 
 #[component]
 struct Velocity(f32, f32);
@@ -38,8 +38,8 @@ struct Flower {
 }
 
 #[entity]
-struct EntityWithPosition {
-    position: Position,
+pub struct EntityWithPosition {
+    pub position: Position,
 }
 
 #[system]
