@@ -163,6 +163,9 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             pub fn at_mut(&'a mut self, index: usize) -> Option<T> {
                 self.query.at_mut(self.world, index)
             }
+            pub fn is_empty(&'a mut self) -> bool {
+                self.query.len(self.world) == 0
+            }
         }
 
         #[allow(dead_code)]
@@ -186,6 +189,9 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             pub fn at(&'a self, index: usize) -> Option<T> {
                 self.query.at(self.world, index)
             }
+            pub fn is_empty(&'a self) -> bool {
+                self.query.len(self.world) == 0
+            }
         }
 
         #[allow(dead_code)]
@@ -195,7 +201,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
                 World: QueryMutFrom<'a, T>,
             {
                 WithQueryMut {
-                    query: query,
+                    query,
                     world: self,
                 }
             }
@@ -207,7 +213,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
                 World: QueryFrom<'a, T>,
             {
                 WithQuery {
-                    query: query,
+                    query,
                     world: self,
                 }
             }
@@ -518,6 +524,9 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             T: 'a + Send
         {
             fn len(&'a self) -> usize;
+            fn is_empty(&'a self) -> bool {
+                self.len() == 0
+            }
         }
 
 
@@ -655,7 +664,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
 
             if mutable {
                 code_rs.push(quote! {
-                    #[allow(unused_parens)]
+                    #[allow(unused_parens, clippy::needless_question_mark, clippy::double_parens)]
                     impl<'a> QueryMutFrom<'a, (#(#data_types),*)> for #archetype_type {
                         fn query_mut_from(&'a mut self) -> impl Iterator<Item = (#(#data_types),*)> {
                             izip!(#(#field_quotes),*)
@@ -681,7 +690,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                 });
             } else {
                 code_rs.push(quote! {
-                    #[allow(unused_parens)]
+                    #[allow(unused_parens, clippy::needless_question_mark, clippy::double_parens)]
                     impl<'a> QueryFrom<'a, (#(#data_types),*)> for #archetype_type {
                         fn query_from(&'a self) -> impl Iterator<Item = (#(#data_types),*)> {
                             izip!(#(#field_quotes),*)
