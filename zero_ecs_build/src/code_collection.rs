@@ -81,6 +81,8 @@ impl CollectedData {
 }
 
 #[allow(clippy::single_match)]
+// I don't understand why this would complain. Looks good to me so added allow clippy
+#[allow(clippy::collapsible_match)]
 pub fn collect_data(path: &str) -> CollectedData {
     let mut entities = vec![];
     let mut queries = vec![];
@@ -233,15 +235,12 @@ fn collect_query(ty: &Type) -> Option<Query> {
             let mut mutable_fields = vec![];
             let mut const_fields = vec![];
             let ty = type_reference.elem.clone();
-            match *ty {
-                Type::Path(type_path) => {
-                    if type_reference.mutability.is_some() {
-                        mutable_fields.push(type_path.to_token_stream().to_string());
-                    } else {
-                        const_fields.push(type_path.to_token_stream().to_string());
-                    }
+            if let Type::Path(type_path) = *ty {
+                if type_reference.mutability.is_some() {
+                    mutable_fields.push(type_path.to_token_stream().to_string());
+                } else {
+                    const_fields.push(type_path.to_token_stream().to_string());
                 }
-                _ => {}
             }
             Some(Query {
                 mutable_fields,
@@ -252,15 +251,12 @@ fn collect_query(ty: &Type) -> Option<Query> {
             let mut mutable_fields = vec![];
             let mut const_fields = vec![];
             for elem in &type_tuple.elems {
-                match elem {
-                    Type::Reference(type_reference) => {
-                        if type_reference.mutability.is_some() {
-                            mutable_fields.push(type_reference.elem.to_token_stream().to_string());
-                        } else {
-                            const_fields.push(type_reference.elem.to_token_stream().to_string());
-                        }
+                if let Type::Reference(type_reference) = elem {
+                    if type_reference.mutability.is_some() {
+                        mutable_fields.push(type_reference.elem.to_token_stream().to_string());
+                    } else {
+                        const_fields.push(type_reference.elem.to_token_stream().to_string());
                     }
-                    _ => {}
                 }
             }
             Some(Query {
