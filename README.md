@@ -1,7 +1,7 @@
 # Zero ECS
 
 Zero ECS is an Entity Component System that is written with 4 goals
-1. Only use zero cost abstractions - no use of dyn and Box and stuff
+1. Only use zero cost abstractions - no use of dyn and Box and stuff [zero-cost-abstractions](https://doc.rust-lang.org/beta/embedded-book/static-guarantees/zero-cost-abstractions.html)
 2. No use of unsafe rust code. 
 3. Be very user friendly. The user should write as little boilerplate as possible.
 4. Be very fast
@@ -43,7 +43,7 @@ fn main() {
     generate_ecs("src/main.rs"); // look for components, entities and systems in main.rs
 }
 ```
-This will generate the entity component system based on the component, entities and systems in main.rs. It accepts a grob so you can use wildcards.
+This will generate the entity component system based on the component, entities and systems in main.rs. It accepts a glob so you can use wildcards.
 ```rust
 use zero_ecs_build::*;
 fn main() {
@@ -85,7 +85,7 @@ struct PlayerComponent;
 
 ### Entities
 
-Entities are a collection of components, they may also be reffered to as archetypes, or bundles, or game objects. 
+Entities are a collection of components, they may also be refered to as archetypes, or bundles, or game objects. 
 Note that once "in" the ECS. An Entity is simply an ID that can be copied.
 
 In our example, we define an enemy and a player, they both have position and velocity but can be differentiated by their "tag" components. 
@@ -122,7 +122,7 @@ fn print_positions(world: &World, query: Query<&Position>) {
 ```
 #### Explained:
 
-- world: &World - Since the system doesn't modify anything, it can be an unmutable reference
+- world: &World - Since the system doesn't modify anything, it can be an immutable reference
 - query: Query<&Position> - We want to query the world for all positions
 - world.with_query(query).iter() - creates an iterator over all Position components
 
