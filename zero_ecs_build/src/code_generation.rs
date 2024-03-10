@@ -326,6 +326,7 @@ pub fn generate_world_rs(
                 index_lookup: Vec<Option<usize>>,
             }
 
+            #[allow(dead_code)]
             impl #archetype_type {
                 fn len(&self) -> usize {
                     self.entities.len()
@@ -517,6 +518,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
         //use zero_ecs::ParallelIterator;
         #[allow(unused_imports)]
         use zero_ecs::izip;
+        #[allow(unused_imports)]
         use zero_ecs::chain;
 
         pub trait LenFrom<'a, T>

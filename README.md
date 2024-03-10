@@ -13,7 +13,7 @@ It achieves this by generating all code at compile time, using a combination of 
 Create a new project
 ```
 cargo new zero_ecs_example
-cd zero_ecs/example
+cd zero_ecs_example
 ```
 
 Add the dependencies
@@ -25,10 +25,10 @@ cargo add zero_ecs_build --build
 Your Cargo.toml should look something like this:
 ```
 [dependencies]
-zero_ecs = "0.1.2"
+zero_ecs = "*"
 
 [build-dependencies]
-zero_ecs_build = "0.1.2"
+zero_ecs_build = "*"
 ```
 
 Create `build.rs`
@@ -37,14 +37,14 @@ touch build.rs
 ```
 
 Edit `build.rs` to call the zero_ecs's build generation code.
-```
+```rust
 use zero_ecs_build::*;
 fn main() {
     generate_ecs("src/main.rs"); // look for components, entities and systems in main.rs
 }
 ```
 This will generate the entity component system based on the component, entities and systems in main.rs. It accepts a grob so you can use wildcards.
-```
+```rust
 use zero_ecs_build::*;
 fn main() {
     generate_ecs("src/**/*.rs"); // look in all *.rs files in src. 
@@ -57,7 +57,7 @@ fn main() {
 
 In `main.rs`
 Include the ECS like so:
-```
+```rust
 include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 ```
 
@@ -66,7 +66,7 @@ include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 Define some components:
 
 Position and velocity has x and y
-```
+```rust
 #[component]
 struct Position(f32, f32);
 
@@ -75,7 +75,7 @@ struct Velocity(f32, f32);
 ```
 
 It is normal to "tag" entities with a component in ECS to be able to single out those entities in systems.
-```
+```rust
 #[component]
 struct EnemyComponent;
 
@@ -86,11 +86,11 @@ struct PlayerComponent;
 ### Entities
 
 Entities are a collection of components, they may also be reffered to as archetypes, or bundles, or game objects. 
-Not that once "in" the ECS. An Entity is simply an ID that can be copied.
+Note that once "in" the ECS. An Entity is simply an ID that can be copied.
 
 In our example, we define an enemy and a player, they both have position and velocity but can be differentiated by their "tag" components. 
 
-```
+```rust
 #[entity]
 struct Enemy {
     position: Position,
@@ -112,7 +112,7 @@ Systems run the logic for the application. They can accept references, mutable r
 
 In our example we can create a system that simply prints the position of all entities
 
-```
+```rust
 #[system]
 fn print_positions(world: &World, query: Query<&Position>) {
     world.with_query(query).iter().for_each(|position| {
@@ -132,7 +132,7 @@ fn print_positions(world: &World, query: Query<&Position>) {
 In our `fn main` change it to create 10 enemies and 10 players, 
 Also add the `systems_main(&world);` to call all systems.
 
-```
+```rust
 fn main() {
     let mut world = World::default();
 
@@ -164,7 +164,7 @@ Continuing our example
 Most systems will mutate the world state and needs additional resources, like texture managers, time managers, input managers etc. 
 A good practice is to group them in a Resources struct. (But Not nescessary)
 
-```
+```rust
 struct Resources {
     delta_time: f32,
 }
@@ -188,7 +188,7 @@ fn apply_velocity(
 
 We also have to change the main function to include resources in the call. 
 
-```
+```rust
 let resources = Resources { delta_time: 0.1 };
 
 systems_main(&resources, &mut world);
@@ -200,7 +200,7 @@ systems_main(&resources, &mut world);
 Let's say we want to create a rule that if player and enemies get within 3 units of eachother they should both be destroyed. 
 This is how we might implement that:
 
-```
+```rust
 #[system]
 fn collide_enemy_and_players(
     world: &mut World, // we are destorying entities so it needs to be mutable
@@ -232,21 +232,23 @@ fn collide_enemy_and_players(
 }
 ```
 
-#### Get entities
+#### Get & At entities
+
 Get is identical to query but takes an Entity. 
+At is identical to query but takes an index.
 
 Let's say you wanted an entity that follows a player. This is how you could implement that:
 
 Define a component for the companion
-```
+```rust
 #[component]
 struct CompanionComponent {
-    follow_entity: Option<Entity>,
+    target_entity: Option<Entity>,
 }
 ```
 
 Define the Companion Entity. It has a position and a companion component:
-```
+```rust
 #[entity]
 struct Companion {
     position: Position,
@@ -254,74 +256,29 @@ struct Companion {
 }
 ```
 
-The companion system. 
-This becomes a little bit trickier.
-In rust we can either have one mutable reference or many immutable references. 
-In this example it means we can't modify the companion's position inside the loop, 
+Now we need to write the companion system. 
+For every companion we need to check if it has a target. 
+If it has a target we need to check if target exists (it could have been deleted).
+If the target exists we get the *value of* target's position and set the companion's position with that value. 
 
-This does not compile:
+We need to query for companions and their position as mutable. And we need to query for every entity that has a position. This means a companion could technically follow it self. 
 
-```
+```rust
 #[system]
-fn companion_follow_does_not_compile(
+fn companion_follow(
     world: &mut World,
     companions: Query<(&mut Position, &CompanionComponent)>,
     positions: Query<&Position>,
 ) {
-    for (pos, companion) in world.with_query_mut(companions).iter_mut() {
-        if let Some(follow_entity) = companion.follow_entity {
-            if let Some(follow_position) = world.with_query(positions).get(follow_entity) {
-                pos.0 = follow_position.0;
-                pos.1 = follow_position.1;
-            }
-        }
-    }
-}
 ```
 
-**Note: In future, if Without is implemented this could be possible if the second "positions" query queries for Without<CompanionComponent>. This is not yet implemented though. **
+Implementation: 
+We can't simply iterate through the companions, get the target position and update the position because we can only have one borrow if the borrow is mutable (unless we use unsafe code).
 
-Instead just like with the collisions earlier, we collect what actions should be taken, and then execute them.
+We can do what we did with destroying entities, but it will be slow.
 
-```
-#[system]
-fn companion_follow(
-    world: &mut World,
-    companions: Query<(&Entity, &CompanionComponent)>,
-    positions: Query<&Position>,
-    mut_positions: Query<&mut Position>,
-) {
-    let follow: Vec<(Entity, (f32, f32))> = world
-        .with_query(companions)
-        .iter()
-        .filter_map(|(companion_entity, companion)| {
-            if let Some(follow_entity) = companion.follow_entity {
-                if let Some(target_position) = world.with_query(positions).get(follow_entity) {
-                    Some((*companion_entity, (target_position.0, target_position.1)))
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        })
-        .collect();
+The solution is to iterate using index, only borrowing what we need for a short time:
 
-    for (comp_entity, (x, y)) in follow {
-        if let Some(companion_position) = world.with_query_mut(mut_positions).get_mut(comp_entity) {
-            companion_position.0 = x;
-            companion_position.1 = y;
-        }
-    }
-}
-```
-
-The problem with that code, I think, (needs to be confirmed through benchmarks), is that ist is slow. An alternative is to iterate using index instead, only retrieving what we need, and this way avoiding borrowing multiple references. 
-
-Here we 
- - Start by iterating through all companions using index.
- - Retrieve the positions we want to set our companion to. 
- - Get and update the position component of the companion.
 
 ```rust
 #[system]
@@ -331,22 +288,26 @@ fn companion_follow(
     positions: Query<&Position>,
 ) {
     for companion_idx in 0..world.with_query_mut(companions).len() {
-        if let Some(follow_position) = world
+        // iterate the count of companions
+        if let Some(target_position) = world
             .with_query_mut(companions)
-            .at_mut(companion_idx)
-            .and_then(|(_, companion)| companion.follow_entity)
+            .at_mut(companion_idx) // get the companion at index companion_idx
+            .and_then(|(_, companion)| companion.target_entity) // then get the target entity, if it is not none
+            .and_then(|companion_target_entity| {
+                // then get the VALUE of target position (meaning we don't use a reference to the position)
+                world
+                    .with_query(positions)
+                    .get(companion_target_entity) // get the position for the companion_target_entity
+                    .map(|p| (p.0, p.1)) // map to get the VALUE
+            })
         {
-            if let Some(follow_position) = world
-                .with_query(positions)
-                .get(follow_position)
-                .and_then(|p| Some((p.0, p.1)))
+            if let Some((companion_position, _)) =
+                world.with_query_mut(companions).at_mut(companion_idx)
+            // Then simply get the companion position
             {
-                if let Some((follower_position, _)) =
-                    world.with_query_mut(companions).at_mut(companion_idx)
-                {
-                    follower_position.0 = follow_position.0;
-                    follower_position.1 = follow_position.1;
-                }
+                // and update it to the target's position
+                companion_position.0 = target_position.0;
+                companion_position.1 = target_position.1;
             }
         }
     }
