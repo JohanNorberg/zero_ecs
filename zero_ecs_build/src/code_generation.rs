@@ -142,6 +142,7 @@ pub fn generate_default_queries(out_dir: &str) -> String {
             world: &'a World,
         }
 
+        #[allow(dead_code)]
         impl<'a, T> WithQueryMut<'a, T>
             where World: QueryMutFrom<'a, T>,
                 World: LenFrom<'a, T>,
@@ -163,6 +164,8 @@ pub fn generate_default_queries(out_dir: &str) -> String {
                 self.query.at_mut(self.world, index)
             }
         }
+
+        #[allow(dead_code)]
         impl<'a, T> WithQuery<'a, T>
             where World: QueryFrom<'a, T>,
                 World: LenFrom<'a, T>,
@@ -228,6 +231,7 @@ pub fn generate_world_rs(
     });
 
     world_rs.push(quote! {
+        #[allow(unused_imports)]
         use zero_ecs::*;
         #[derive(Debug, Clone, Copy)]
         enum EntityType {
@@ -999,12 +1003,10 @@ pub fn generate_copy_traits(
             code_rs.push(quote! {
                 impl Copy for Query<(#(#data_types),*)> {}
             });
-        } else {
-            if let Some(data_type) = data_types.iter().next() {
-                code_rs.push(quote! {
-                    impl Copy for Query<#data_type> {}
-                });
-            }
+        } else if let Some(data_type) = data_types.iter().next() {
+            code_rs.push(quote! {
+                impl Copy for Query<#data_type> {}
+            });
         }
     }
 
