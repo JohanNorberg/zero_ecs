@@ -3,8 +3,8 @@ name: Rust
 on:
   push:
     branches: ["github-actions"]
-  pull_request:
-    branches: ["github-actions"]
+#  pull_request:
+#    branches: ["github-actions"]
 
 env:
   CARGO_TERM_COLOR: always
