@@ -33,4 +33,4 @@ jobs:
       - name: Install cargo-release
         run: cargo install cargo-release
       - name: Release
-        run: cargo release --workspace patch
+        run: cargo release --workspace patch --execute --no-confirm --no-verify
