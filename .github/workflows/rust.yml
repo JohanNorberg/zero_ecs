@@ -2,36 +2,72 @@ name: Rust
 
 on:
   push:
-    branches: ["main"]
+    branches: ["feature/readme-sync"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+
+  only-build:
+    if: "contains(github.event.head_commit.message, 'chore')"
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
       - name: Build
         run: cargo build --verbose
       - name: Run tests
         run: cargo test --verbose
-  publish:
+
+  build-publish:
     if: "!contains(github.event.head_commit.message, 'chore')"
     runs-on: ubuntu-latest
-    needs: build
+
     steps:
       - uses: actions/checkout@v3
       - name: Configure Git # copied from here: https://stackoverflow.com/questions/69839851/github-actions-copy-git-user-name-and-user-email-from-last-commit
         run: |
           git config user.name "$(git log -n 1 --pretty=format:%an)" 
           git config user.email "$(git log -n 1 --pretty=format:%ae)"
+      - name: Readme cp
+        run: |
+          cp README.md zero_ecs/README.md
+          cp README.md zero_ecs_build/README.md
+          cp README.md zero_ecs_macros/README.md
+      
+      - name: Check for changes
+        id: git-check
+        run: |
+          git status
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::set-output name=changed::true"
+          fi
+      - name: Commit changes if any
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
+          git add zero_ecs/README.md
+          git add zero_ecs_build/README.md
+          git add zero_ecs_macros/README.md
+          git commit -m "chore: sync README.md"
+          git push
+
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
+
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+      
       - name: Install cargo-release
         run: cargo install cargo-release
       - name: Release
