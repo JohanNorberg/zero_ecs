@@ -1,0 +1,47 @@
+name: Not Rocket Science
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # Necessary for a complete history for merges.
+
+    - name: Check if can be fast-forwarded
+      run: |
+        git fetch origin ${{ github.base_ref }}
+        MERGE_BASE=$(git merge-base HEAD FETCH_HEAD)
+        if [ $(git rev-parse HEAD) != $(git rev-parse $MERGE_BASE) ] && [ $(git rev-parse FETCH_HEAD) != $(git rev-parse $MERGE_BASE) ]; then
+          echo "Cannot be fast-forwarded."
+          exit 1
+        fi
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+
+    - name: Build
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        args: --verbose
+
+    - name: Run tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --verbose
+
+    - name: Check with clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: -- -D warnings
