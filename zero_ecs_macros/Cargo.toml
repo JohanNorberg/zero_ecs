@@ -1,6 +1,6 @@
 [package]
 name = "zero_ecs_macros"
-version = "0.2.17"
+version = "0.2.18"
 edition = "2021"
 description = "Procedural macros for Build scripts for: ZeroECS: an Entity Component System (ECS), using only zero-cost abstractions"
 repository = "https://github.com/JohanNorberg/zero_ecs"
