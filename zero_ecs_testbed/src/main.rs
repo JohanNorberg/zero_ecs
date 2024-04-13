@@ -69,7 +69,7 @@ fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {
 #[system]
 fn print_names(world: &mut World, query: Query<&Name>) {
     world.with_query(query).iter().for_each(|name| {
-        println!("Name: {:?}", name);
+        println!("Name: {:?}", name.0);
     });
 }
 
@@ -190,6 +190,7 @@ fn main() {
     });
 
     systems_main(&mut world);
+
     systems_last(&mut world);
 
     world.destroy(e);
