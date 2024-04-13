@@ -729,14 +729,25 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             })
             .collect();
 
-        code_rs.push(quote! {
-            #[allow(unused_parens, unused_variables, unused_assignments)]
-            impl<'a> LenFrom<'a, (#(#data_types),*)> for World {
-                fn len(&'a self) -> usize {
-                    sum!(#(#sum_args),*)
+        if !sum_args.is_empty() {
+            code_rs.push(quote! {
+                #[allow(unused_parens, unused_variables, unused_assignments)]
+                impl<'a> LenFrom<'a, (#(#data_types),*)> for World {
+                    fn len(&'a self) -> usize {
+                        sum!(#(#sum_args),*)
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            code_rs.push(quote! {
+                #[allow(unused_parens, unused_variables, unused_assignments)]
+                impl<'a> LenFrom<'a, (#(#data_types),*)> for World {
+                    fn len(&'a self) -> usize {
+                        0
+                    }
+                }
+            });
+        }
 
         if mutable {
             let chain_args: Vec<_> = matching_entities
@@ -787,13 +798,14 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
                         chain_par!(#(#par_chain_args),*)
                     }
-                    #[allow(unreachable_patterns)]
+                    #[allow(unreachable_patterns, clippy::match_single_binding)]
                     fn get_mut_from(&'a mut self, entity: Entity) -> Option<(#(#data_types),*)> {
                         match entity.entity_type {
                             #(#match_get_rs)*
                             _ => None
                         }
                     }
+                    #[allow(unused_mut)]
                     fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
                     {
                         let mut index = index;
@@ -850,7 +862,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     fn par_query_from(&'a self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
                         chain_par!(#(#par_chain_args),*)
                     }
-                    #[allow(unreachable_patterns)]
+                    #[allow(unreachable_patterns, clippy::match_single_binding)]
                     fn get_from(&'a self, entity: Entity) -> Option<(#(#data_types),*)> {
                         match entity.entity_type {
                             #(#match_get_rs)*

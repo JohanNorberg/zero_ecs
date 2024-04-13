@@ -69,7 +69,7 @@ fn apply_velocity(world: &mut World, query: Query<(&mut Position, &Velocity)>) {
 #[system]
 fn print_names(world: &mut World, query: Query<&Name>) {
     world.with_query(query).iter().for_each(|name| {
-        println!("Name: {:?}", name);
+        println!("Name: {:?}", name.0);
     });
 }
 
@@ -87,6 +87,21 @@ struct FollowerComponent {
 struct FollowerEntity {
     follower: FollowerComponent,
     position: Position,
+}
+
+#[component]
+struct MyUnused {
+    _unused: i32,
+}
+
+#[system]
+fn unused_system(world: &mut World, le_query: Query<&mut MyUnused>) {
+    world
+        .with_query_mut(le_query)
+        .iter_mut()
+        .for_each(|unused| {
+            unused._unused += 1;
+        });
 }
 
 #[system]
@@ -175,6 +190,7 @@ fn main() {
     });
 
     systems_main(&mut world);
+
     systems_last(&mut world);
 
     world.destroy(e);

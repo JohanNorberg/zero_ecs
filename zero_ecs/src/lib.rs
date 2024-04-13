@@ -1,5 +1,6 @@
 pub use itertools::chain;
 pub use itertools::izip;
+pub use rayon;
 pub use rayon::prelude::*;
 pub use zero_ecs_macros::component;
 pub use zero_ecs_macros::entity;
