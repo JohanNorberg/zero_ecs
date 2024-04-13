@@ -729,7 +729,6 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             })
             .collect();
 
-
         if sum_args.len() > 0 {
             code_rs.push(quote! {
                 #[allow(unused_parens, unused_variables, unused_assignments)]
