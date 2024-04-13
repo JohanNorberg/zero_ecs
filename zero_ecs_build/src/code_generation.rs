@@ -729,14 +729,26 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
             })
             .collect();
 
-        code_rs.push(quote! {
-            #[allow(unused_parens, unused_variables, unused_assignments)]
-            impl<'a> LenFrom<'a, (#(#data_types),*)> for World {
-                fn len(&'a self) -> usize {
-                    sum!(#(#sum_args),*)
+
+        if sum_args.len() > 0 {
+            code_rs.push(quote! {
+                #[allow(unused_parens, unused_variables, unused_assignments)]
+                impl<'a> LenFrom<'a, (#(#data_types),*)> for World {
+                    fn len(&'a self) -> usize {
+                        sum!(#(#sum_args),*)
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            code_rs.push(quote! {
+                #[allow(unused_parens, unused_variables, unused_assignments)]
+                impl<'a> LenFrom<'a, (#(#data_types),*)> for World {
+                    fn len(&'a self) -> usize {
+                        0
+                    }
+                }
+            });
+        }
 
         if mutable {
             let chain_args: Vec<_> = matching_entities
@@ -794,6 +806,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             _ => None
                         }
                     }
+                    #[allow(unused_mut)]
                     fn at_mut(&'a mut self, index: usize) -> Option<(#(#data_types),*)>
                     {
                         let mut index = index;

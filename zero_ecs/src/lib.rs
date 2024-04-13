@@ -4,6 +4,7 @@ pub use rayon::prelude::*;
 pub use zero_ecs_macros::component;
 pub use zero_ecs_macros::entity;
 pub use zero_ecs_macros::system;
+pub use rayon;
 #[macro_export]
 macro_rules! izip_par {
     // @closure creates a tuple-flattening closure for .map() call. usage:

@@ -89,6 +89,18 @@ struct FollowerEntity {
     position: Position,
 }
 
+#[component]
+struct MyUnused {
+    _unused: i32,
+}
+
+#[system]
+fn unused_system(world: &mut World, le_query: Query<&mut MyUnused>) {
+    world.with_query_mut(le_query).iter_mut().for_each(|unused| {
+        unused._unused += 1;
+    });
+}
+
 #[system]
 fn follower_update_position(
     world: &mut World,
