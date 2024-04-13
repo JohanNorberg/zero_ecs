@@ -798,7 +798,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     fn par_query_mut_from(&'a mut self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
                         chain_par!(#(#par_chain_args),*)
                     }
-                    #[allow(unreachable_patterns)]
+                    #[allow(unreachable_patterns, clippy::match_single_binding)]
                     fn get_mut_from(&'a mut self, entity: Entity) -> Option<(#(#data_types),*)> {
                         match entity.entity_type {
                             #(#match_get_rs)*
@@ -862,7 +862,7 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                     fn par_query_from(&'a self) -> impl ParallelIterator<Item = (#(#data_types),*)> {
                         chain_par!(#(#par_chain_args),*)
                     }
-                    #[allow(unreachable_patterns)]
+                    #[allow(unreachable_patterns, clippy::match_single_binding)]
                     fn get_from(&'a self, entity: Entity) -> Option<(#(#data_types),*)> {
                         match entity.entity_type {
                             #(#match_get_rs)*
