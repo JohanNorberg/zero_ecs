@@ -869,6 +869,8 @@ pub fn generate_queries(out_dir: &str, include_files: &mut Vec<String>, collecte
                             _ => None
                         }
                     }
+
+                    #[allow(unused_mut)]
                     fn at(&'a self, index: usize) -> Option<(#(#data_types),*)>
                     {
                         let mut index = index;
