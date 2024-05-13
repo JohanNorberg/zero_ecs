@@ -1,8 +1,8 @@
 # Zero ECS
 
 Zero ECS is an Entity Component System that is written with 4 goals
-1. Only use zero cost abstractions - no use of dyn and Box and stuff [zero-cost-abstractions](https://doc.rust-lang.org/beta/embedded-book/static-guarantees/zero-cost-abstractions.html)
-2. No use of unsafe rust code. 
+1. Only use zero cost abstractions - no use of dyn and Box and stuff [zero-cost-abstractions](https://doc.rust-lang.org/beta/embedded-book/static-guarantees/zero-cost-abstractions.html).
+2. No use of unsafe rust code.
 3. Be very user friendly. The user should write as little boilerplate as possible.
 4. Be very fast
 
@@ -11,19 +11,22 @@ It achieves this by generating all code at compile time, using a combination of 
 ## Instructions
 
 Create a new project
-```
+
+```sh
 cargo new zero_ecs_example
 cd zero_ecs_example
 ```
 
 Add the dependencies
-```
+
+```sh
 cargo add zero_ecs
 cargo add zero_ecs_build --build
 ```
 
 Your Cargo.toml should look something like this:
-```
+
+```sh
 [dependencies]
 zero_ecs = "*"
 
@@ -32,18 +35,23 @@ zero_ecs_build = "*"
 ```
 
 Create `build.rs`
-```
+
+```sh
 touch build.rs
 ```
 
 Edit `build.rs` to call the zero_ecs's build generation code.
+
 ```rust
 use zero_ecs_build::*;
 fn main() {
     generate_ecs("src/main.rs"); // look for components, entities and systems in main.rs
 }
 ```
-This will generate the entity component system based on the component, entities and systems in main.rs. It accepts a glob so you can use wildcards.
+
+This will generate the entity component system based on the component, entities and systems in main.rs.
+It accepts a glob so you can use wild cards.
+
 ```rust
 use zero_ecs_build::*;
 fn main() {
@@ -57,6 +65,7 @@ fn main() {
 
 In `main.rs`
 Include the ECS like so:
+
 ```rust
 include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 ```
@@ -66,6 +75,7 @@ include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
 Define some components:
 
 Position and velocity has x and y
+
 ```rust
 #[component]
 struct Position(f32, f32);
@@ -75,6 +85,7 @@ struct Velocity(f32, f32);
 ```
 
 It is normal to "tag" entities with a component in ECS to be able to single out those entities in systems.
+
 ```rust
 #[component]
 struct EnemyComponent;
@@ -85,7 +96,7 @@ struct PlayerComponent;
 
 ### Entities
 
-Entities are a collection of components, they may also be refered to as archetypes, or bundles, or game objects. 
+Entities are a collection of components, they may also be referred to as archetypes, or bundles, or game objects. 
 Note that once "in" the ECS. An Entity is simply an ID that can be copied.
 
 In our example, we define an enemy and a player, they both have position and velocity but can be differentiated by their "tag" components. 
@@ -120,16 +131,16 @@ fn print_positions(world: &World, query: Query<&Position>) {
     });
 }
 ```
+
 #### Explained:
 
 - world: &World - Since the system doesn't modify anything, it can be an immutable reference
 - query: Query<&Position> - We want to query the world for all positions
 - world.with_query(query).iter() - creates an iterator over all Position components
 
-
 ### Creating entities and calling system
 
-In our `fn main` change it to create 10 enemies and 10 players, 
+In our `fn main` change it to create 10 enemies and 10 players,
 Also add the `systems_main(&world);` to call all systems.
 
 ```rust
@@ -153,6 +164,7 @@ fn main() {
     systems_main(&world);
 }
 ```
+
 Running the program now, will print the positions of the entities. 
 
 ## More advanced
@@ -313,3 +325,7 @@ fn companion_follow(
     }
 }
 ```
+
+# TODO:
+- [ ] Re use IDs of deleted entities
+
