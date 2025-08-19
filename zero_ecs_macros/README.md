@@ -1,3 +1,10 @@
+[![Warning](https://img.shields.io/badge/⚠️-Warning-red)](#)
+
+> **This is version `0.2.*`.**  
+> I am not completely happy with how this library works right now.  
+>  
+> **I am working on `0.3.*` but I don't know when I will have time to finish development on it.**
+
 # Zero ECS
 
 Zero ECS is an Entity Component System that is written with 4 goals
