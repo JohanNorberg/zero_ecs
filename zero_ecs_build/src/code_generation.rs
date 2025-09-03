@@ -908,7 +908,12 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
     for group in groups.iter() {
         let mut calls = vec![];
 
-        let mut call_params: HashMap<(String, String), SystemDefParamReference> = HashMap::new();
+        enum CallParams {
+            Reference(SystemDefParamReference),
+            Value(SystemDefParamValue),
+        }
+
+        let mut call_params: HashMap<(String, String), CallParams> = HashMap::new();
 
         for system in collected
             .systems
@@ -933,15 +938,27 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
                         });
 
                         let key = (reference.name.clone(), reference.ty.clone());
-                        let item = reference.clone();
+                        let item = CallParams::Reference(reference.clone());
                         call_params
                             .entry(key)
-                            .and_modify(|e| {
-                                if reference.mutable {
+                            .and_modify(|e| match e {
+                                CallParams::Reference(e) if reference.mutable => {
                                     e.mutable = true;
                                 }
+                                _ => {}
                             })
                             .or_insert(item);
+                    }
+                    SystemDefParam::Value(value) => {
+                        let name = fident!(value.name);
+
+                        params_rs.push(quote! {
+                            #name,
+                        });
+
+                        let key = (value.name.clone(), value.ty.clone());
+                        let item = CallParams::Value(value.clone());
+                        call_params.entry(key).insert_entry(item);
                     }
                 }
             }
@@ -961,21 +978,35 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
         // order call_params by name
         let call_params = call_params
             .iter()
-            .sorted_by(|a, b| a.name.cmp(&b.name))
+            .sorted_by(|a, b| match (a, b) {
+                (CallParams::Reference(a), CallParams::Reference(b)) => a.name.cmp(&b.name),
+                (CallParams::Value(a), CallParams::Value(b)) => a.name.cmp(&b.name),
+                (CallParams::Reference(a), CallParams::Value(b)) => a.name.cmp(&b.name),
+                (CallParams::Value(a), CallParams::Reference(b)) => a.name.cmp(&b.name),
+            })
             .collect::<Vec<_>>();
 
-        let call_params_rs = call_params.iter().map(|r| {
-            let name = fident!(r.name);
-            let ty = fident!(r.ty);
+        let call_params_rs = call_params.iter().map(|r| match r {
+            CallParams::Reference(r) => {
+                let name = fident!(r.name);
+                let ty = fident!(r.ty);
 
-            if r.mutable {
-                quote! {
-                   #name: &mut #ty
+                if r.mutable {
+                    quote! {
+                       #name: &mut #ty
+                    }
+                } else {
+                    quote! {
+
+                        #name: &#ty
+                    }
                 }
-            } else {
+            }
+            CallParams::Value(v) => {
+                let name = fident!(v.name);
+                let ty = fident!(v.ty);
                 quote! {
-
-                    #name: &#ty
+                    #name: #ty
                 }
             }
         });
