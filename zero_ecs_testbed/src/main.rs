@@ -73,6 +73,14 @@ fn print_names(world: &mut World, query: Query<&Name>) {
     });
 }
 
+#[system(group = pass_by_value)]
+fn pass_by_value(world: &mut World, n: Name, query: Query<&mut Name>) {
+    world
+        .with_query_mut(query)
+        .iter_mut()
+        .for_each(|name| name.0 = n.0.clone());
+}
+
 #[derive(Debug, Default)]
 struct Resources {
     test: i32,
@@ -332,5 +340,21 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_system_pass_by_value() {
+        let mut world = World::default();
+        let a = world.create(NameEntity {
+            name: Name("123".to_string()),
+        });
+        let b = world.create(NameEntity {
+            name: Name("456".to_string()),
+        });
+        systems_pass_by_value(Name("abc".to_string()), &mut world);
+        let a: &Name = world.get_from(a).unwrap();
+        let b: &Name = world.get_from(b).unwrap();
+        assert!(a.0 == "abc");
+        assert!(b.0 == "abc");
     }
 }
