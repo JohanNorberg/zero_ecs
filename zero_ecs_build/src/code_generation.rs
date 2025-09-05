@@ -337,21 +337,21 @@ pub fn generate_world_rs(
         world_rs.push(quote! {
             #[allow(dead_code)]
             impl #archetype_type {
-                fn query_mut<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+                fn query_mut<'a, T>(&'a mut self) -> impl Iterator<Item = T> + 'a
                 where
                     #archetype_type: QueryMutFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryMutFrom::<T>::query_mut_from(self)
                 }
-                fn par_query_mut<'a, T: 'a>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
+                fn par_query_mut<'a, T>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
                 where
                     #archetype_type: QueryMutFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryMutFrom::<T>::par_query_mut_from(self)
                 }
-                fn get_mut<'a, T: 'a>(&'a mut self, entity: Entity) -> Option<T>
+                fn get_mut<'a, T>(&'a mut self, entity: Entity) -> Option<T>
                 where
                     #archetype_type: QueryMutFrom<'a, T>,
                     T: 'a + Send,
@@ -363,21 +363,21 @@ pub fn generate_world_rs(
         world_rs.push(quote! {
             #[allow(dead_code)]
             impl #archetype_type {
-                fn query<'a, T: 'a>(&'a self) -> impl Iterator<Item = T> + 'a
+                fn query<'a, T>(&'a self) -> impl Iterator<Item = T> + 'a
                 where
                     #archetype_type: QueryFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryFrom::<T>::query_from(self)
                 }
-                fn par_query<'a, T: 'a>(&'a self) -> impl ParallelIterator<Item = T> + 'a
+                fn par_query<'a, T>(&'a self) -> impl ParallelIterator<Item = T> + 'a
                 where
                     #archetype_type: QueryFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryFrom::<T>::par_query_from(self)
                 }
-                fn get<'a, T: 'a>(&'a self, entity: Entity) -> Option<T>
+                fn get<'a, T>(&'a self, entity: Entity) -> Option<T>
                 where
                     #archetype_type: QueryFrom<'a, T>,
                     T: 'a + Send,

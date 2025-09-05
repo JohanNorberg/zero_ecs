@@ -117,7 +117,7 @@ pub fn collect_data(path: &str) -> CollectedData {
 
                                     // split on space and take last element
                                     let field_name =
-                                        field_name.split(' ').last().unwrap().to_string();
+                                        field_name.split(' ').next_back().unwrap().to_string();
 
                                     fields.push(Field {
                                         name: field_name,
