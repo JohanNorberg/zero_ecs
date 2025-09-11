@@ -337,21 +337,21 @@ pub fn generate_world_rs(
         world_rs.push(quote! {
             #[allow(dead_code)]
             impl #archetype_type {
-                fn query_mut<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+                fn query_mut<'a, T>(&'a mut self) -> impl Iterator<Item = T> + 'a
                 where
                     #archetype_type: QueryMutFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryMutFrom::<T>::query_mut_from(self)
                 }
-                fn par_query_mut<'a, T: 'a>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
+                fn par_query_mut<'a, T>(&'a mut self) -> impl ParallelIterator<Item = T> + 'a
                 where
                     #archetype_type: QueryMutFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryMutFrom::<T>::par_query_mut_from(self)
                 }
-                fn get_mut<'a, T: 'a>(&'a mut self, entity: Entity) -> Option<T>
+                fn get_mut<'a, T>(&'a mut self, entity: Entity) -> Option<T>
                 where
                     #archetype_type: QueryMutFrom<'a, T>,
                     T: 'a + Send,
@@ -363,21 +363,21 @@ pub fn generate_world_rs(
         world_rs.push(quote! {
             #[allow(dead_code)]
             impl #archetype_type {
-                fn query<'a, T: 'a>(&'a self) -> impl Iterator<Item = T> + 'a
+                fn query<'a, T>(&'a self) -> impl Iterator<Item = T> + 'a
                 where
                     #archetype_type: QueryFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryFrom::<T>::query_from(self)
                 }
-                fn par_query<'a, T: 'a>(&'a self) -> impl ParallelIterator<Item = T> + 'a
+                fn par_query<'a, T>(&'a self) -> impl ParallelIterator<Item = T> + 'a
                 where
                     #archetype_type: QueryFrom<'a, T>,
                     T: 'a + Send,
                 {
                     QueryFrom::<T>::par_query_from(self)
                 }
-                fn get<'a, T: 'a>(&'a self, entity: Entity) -> Option<T>
+                fn get<'a, T>(&'a self, entity: Entity) -> Option<T>
                 where
                     #archetype_type: QueryFrom<'a, T>,
                     T: 'a + Send,
@@ -908,7 +908,12 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
     for group in groups.iter() {
         let mut calls = vec![];
 
-        let mut call_params: HashMap<(String, String), SystemDefParamReference> = HashMap::new();
+        enum CallParams {
+            Reference(SystemDefParamReference),
+            Value(SystemDefParamValue),
+        }
+
+        let mut call_params: HashMap<(String, String), CallParams> = HashMap::new();
 
         for system in collected
             .systems
@@ -933,15 +938,27 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
                         });
 
                         let key = (reference.name.clone(), reference.ty.clone());
-                        let item = reference.clone();
+                        let item = CallParams::Reference(reference.clone());
                         call_params
                             .entry(key)
-                            .and_modify(|e| {
-                                if reference.mutable {
+                            .and_modify(|e| match e {
+                                CallParams::Reference(e) if reference.mutable => {
                                     e.mutable = true;
                                 }
+                                _ => {}
                             })
                             .or_insert(item);
+                    }
+                    SystemDefParam::Value(value) => {
+                        let name = fident!(value.name);
+
+                        params_rs.push(quote! {
+                            #name,
+                        });
+
+                        let key = (value.name.clone(), value.ty.clone());
+                        let item = CallParams::Value(value.clone());
+                        call_params.entry(key).insert_entry(item);
                     }
                 }
             }
@@ -961,21 +978,35 @@ pub fn generate_systems(out_dir: &str, include_files: &mut Vec<String>, collecte
         // order call_params by name
         let call_params = call_params
             .iter()
-            .sorted_by(|a, b| a.name.cmp(&b.name))
+            .sorted_by(|a, b| match (a, b) {
+                (CallParams::Reference(a), CallParams::Reference(b)) => a.name.cmp(&b.name),
+                (CallParams::Value(a), CallParams::Value(b)) => a.name.cmp(&b.name),
+                (CallParams::Reference(a), CallParams::Value(b)) => a.name.cmp(&b.name),
+                (CallParams::Value(a), CallParams::Reference(b)) => a.name.cmp(&b.name),
+            })
             .collect::<Vec<_>>();
 
-        let call_params_rs = call_params.iter().map(|r| {
-            let name = fident!(r.name);
-            let ty = fident!(r.ty);
+        let call_params_rs = call_params.iter().map(|r| match r {
+            CallParams::Reference(r) => {
+                let name = fident!(r.name);
+                let ty = fident!(r.ty);
 
-            if r.mutable {
-                quote! {
-                   #name: &mut #ty
+                if r.mutable {
+                    quote! {
+                       #name: &mut #ty
+                    }
+                } else {
+                    quote! {
+
+                        #name: &#ty
+                    }
                 }
-            } else {
+            }
+            CallParams::Value(v) => {
+                let name = fident!(v.name);
+                let ty = fident!(v.ty);
                 quote! {
-
-                    #name: &#ty
+                    #name: #ty
                 }
             }
         });

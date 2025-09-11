@@ -28,10 +28,17 @@ pub struct SystemDefParamReference {
     pub mutable: bool,
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct SystemDefParamValue {
+    pub name: String,
+    pub ty: String,
+}
+
 #[derive(Debug)]
 pub enum SystemDefParam {
     Query(String),
     Reference(SystemDefParamReference),
+    Value(SystemDefParamValue),
 }
 
 #[derive(Debug, Default)]
@@ -110,7 +117,7 @@ pub fn collect_data(path: &str) -> CollectedData {
 
                                     // split on space and take last element
                                     let field_name =
-                                        field_name.split(' ').last().unwrap().to_string();
+                                        field_name.split(' ').next_back().unwrap().to_string();
 
                                     fields.push(Field {
                                         name: field_name,
@@ -177,10 +184,16 @@ pub fn collect_data(path: &str) -> CollectedData {
                                                     _ => {}
                                                 }
                                             } else {
-                                                panic!(
-                                                    "unsupported type: {} for param: {}",
-                                                    name, param_name
-                                                );
+                                                system_def.params.push(SystemDefParam::Value(
+                                                    SystemDefParamValue {
+                                                        name: param_name.to_string(),
+                                                        ty: name.to_string(),
+                                                    },
+                                                ));
+                                                // panic!(
+                                                //     "unsupported type: {} for param: {}",
+                                                //     name, param_name
+                                                // );
                                             }
                                         }
                                     }
