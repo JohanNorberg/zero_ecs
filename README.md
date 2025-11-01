@@ -129,7 +129,7 @@ The default way of using systems. Needs to accept world, 0-many queries and opti
 
 ```rust
 #[system(World)]
-fn print_enemy_positions(world: &World, query: QueryDef<(&Position, &EnemyComponent)>) {
+fn print_enemy_positions(world: &World, query: Query<(&Position, &EnemyComponent)>) {
     world.with_query(query).iter().for_each(|(pos, _)| {
         println!("x: {}, y: {}", pos.0, pos.1);
     });
@@ -173,8 +173,8 @@ To destroy entities, query for `&Entity` to identify them. You can't destroy ent
 #[system(World)]
 fn collide_enemy_and_players(
     world: &mut World,
-    players: QueryDef<(&Entity, &Position, &PlayerComponent)>,
-    enemies: QueryDef<(&Entity, &Position, &EnemyComponent)>,
+    players: Query<(&Entity, &Position, &PlayerComponent)>,
+    enemies: Query<(&Entity, &Position, &EnemyComponent)>,
 ) {
     let mut entities_to_destroy: HashSet<Entity> = HashSet::new();
 
@@ -226,8 +226,8 @@ We can't simply iterate through the companions and get the target position becau
 #[system(World)]
 fn companion_follow(
     world: &mut World,
-    companions: QueryDef<(&mut Position, &CompanionComponent)>,
-    positions: QueryDef<&Position>,
+    companions: Query<(&mut Position, &CompanionComponent)>,
+    positions: Query<&Position>,
 ) {
     for companion_idx in 0..world.with_query_mut(companions).len() {
         // iterate the count of companions

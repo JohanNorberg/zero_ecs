@@ -84,21 +84,3 @@ macro_rules! sum {
     ($h:expr, $($t:expr),*) =>
         (sum!($h) + sum!($($t),*)); // ...call sum! on both sides of the operation
 }
-
-pub struct QueryDef<T> {
-    phantom: std::marker::PhantomData<T>,
-}
-
-impl<T> Default for QueryDef<T> {
-    fn default() -> Self {
-        Self {
-            phantom: PhantomData,
-        }
-    }
-}
-
-impl<T> QueryDef<T> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-}

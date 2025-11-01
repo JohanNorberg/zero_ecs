@@ -15,7 +15,7 @@ fn inc(value: &mut Value) {
 }
 
 #[system(World)]
-fn assert_value(world: &World, values: QueryDef<&Value>, expected: usize) {
+fn assert_value(world: &World, values: Query<&Value>, expected: usize) {
     let values = world.with_query(values);
     let value: &Value = values.at(0).unwrap();
 
@@ -23,7 +23,7 @@ fn assert_value(world: &World, values: QueryDef<&Value>, expected: usize) {
 }
 
 #[system(World)]
-fn assert_value_for(world: &World, values: QueryDef<&Value>, expected: usize, entity: Entity) {
+fn assert_value_for(world: &World, values: Query<&Value>, expected: usize, entity: Entity) {
     let values = world.with_query(values);
     let value: &Value = values.get(entity).unwrap();
 

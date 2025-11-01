@@ -42,7 +42,7 @@ fn print_positions(position: &Position) {
 
 // The default way of using systems. Needs to accept world, 0-many queries and optional resources.
 #[system(World)]
-fn print_enemy_positions(world: &World, query: QueryDef<(&Position, &EnemyComponent)>) {
+fn print_enemy_positions(world: &World, query: Query<(&Position, &EnemyComponent)>) {
     world.with_query(query).iter().for_each(|(pos, _)| {
         println!("print_enemy_positions - x: {}, y: {}", pos.0, pos.1);
     });
@@ -72,8 +72,8 @@ fn apply_velocity(position: &mut Position, velocity: &Velocity, delta_time: &Del
 #[system(World)]
 fn collide_enemy_and_players(
     world: &mut World, // we are destroying entities so it needs to be mutable
-    players: QueryDef<(&Entity, &Position, &PlayerComponent)>, // include the Entity to be able to identify entities
-    enemies: QueryDef<(&Entity, &Position, &EnemyComponent)>,  // same but for enemies
+    players: Query<(&Entity, &Position, &PlayerComponent)>, // include the Entity to be able to identify entities
+    enemies: Query<(&Entity, &Position, &EnemyComponent)>,  // same but for enemies
 ) {
     let mut entities_to_destroy: HashSet<Entity> = HashSet::new(); // we can't (for obvious reasons) destroy entities from within an iteration.
 
@@ -115,8 +115,8 @@ ecs_world!(EnemyEntity, PlayerEntity, CompanionEntity);
 #[system(World)]
 fn companion_follow(
     world: &mut World,
-    companions: QueryDef<(&mut Position, &CompanionComponent)>,
-    positions: QueryDef<&Position>,
+    companions: Query<(&mut Position, &CompanionComponent)>,
+    positions: Query<&Position>,
 ) {
     for companion_idx in 0..world.with_query_mut(companions).len() {
         // iterate the count of companions

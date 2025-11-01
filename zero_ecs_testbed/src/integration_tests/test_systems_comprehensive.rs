@@ -1,7 +1,7 @@
 //! Comprehensive integration tests for the zero_ecs system.
 //!
 //! This test suite covers:
-//! - `#[system(World)]` with various QueryDef types (single, two, three components)
+//! - `#[system(World)]` with various Query types (single, two, three components)
 //! - `#[system_for_each(World)]` with various component combinations
 //! - Mutable and immutable component queries
 //! - Mixed mutability queries (some mutable, some immutable)
@@ -74,11 +74,11 @@ pub struct EntityAB {
 ecs_world!(EntityA, EntityB, EntityAB);
 
 // ============================================================================
-// Tests for #[system(World)] with various QueryDef types
+// Tests for #[system(World)] with various Query types
 // ============================================================================
 
 #[system(World)]
-fn system_single_component_immutable(world: &World, query: QueryDef<&Counter>) {
+fn system_single_component_immutable(world: &World, query: Query<&Counter>) {
     let q = world.with_query(query);
     // Just verify we can access
     let count = q.len();
@@ -88,7 +88,7 @@ fn system_single_component_immutable(world: &World, query: QueryDef<&Counter>) {
 }
 
 #[system(World)]
-fn system_single_component_mutable(world: &mut World, query: QueryDef<(&mut Counter, &Health)>) {
+fn system_single_component_mutable(world: &mut World, query: Query<(&mut Counter, &Health)>) {
     world
         .with_query_mut(query)
         .iter_mut()
@@ -98,7 +98,7 @@ fn system_single_component_mutable(world: &mut World, query: QueryDef<(&mut Coun
 }
 
 #[system(World)]
-fn system_two_components_immutable(world: &World, query: QueryDef<(&Counter, &Health)>) {
+fn system_two_components_immutable(world: &World, query: Query<(&Counter, &Health)>) {
     let q = world.with_query(query);
     for (counter, health) in q.iter() {
         let _ = (counter.0, health.0);
@@ -106,7 +106,7 @@ fn system_two_components_immutable(world: &World, query: QueryDef<(&Counter, &He
 }
 
 #[system(World)]
-fn system_two_components_mutable(world: &mut World, query: QueryDef<(&mut Counter, &mut Health)>) {
+fn system_two_components_mutable(world: &mut World, query: Query<(&mut Counter, &mut Health)>) {
     world
         .with_query_mut(query)
         .iter_mut()
@@ -117,7 +117,7 @@ fn system_two_components_mutable(world: &mut World, query: QueryDef<(&mut Counte
 }
 
 #[system(World)]
-fn system_two_components_mixed(world: &mut World, query: QueryDef<(&mut Counter, &Health)>) {
+fn system_two_components_mixed(world: &mut World, query: Query<(&mut Counter, &Health)>) {
     world
         .with_query_mut(query)
         .iter_mut()
@@ -127,7 +127,7 @@ fn system_two_components_mixed(world: &mut World, query: QueryDef<(&mut Counter,
 }
 
 #[system(World)]
-fn system_three_components_immutable(world: &World, query: QueryDef<(&Counter, &Health, &Speed)>) {
+fn system_three_components_immutable(world: &World, query: Query<(&Counter, &Health, &Speed)>) {
     let q = world.with_query(query);
     for (counter, health, speed) in q.iter() {
         let _ = (counter.0, health.0, speed.0);
@@ -137,7 +137,7 @@ fn system_three_components_immutable(world: &World, query: QueryDef<(&Counter, &
 #[system(World)]
 fn system_three_components_mutable(
     world: &mut World,
-    query: QueryDef<(&mut Counter, &mut Health, &mut Speed)>,
+    query: Query<(&mut Counter, &mut Health, &mut Speed)>,
 ) {
     world
         .with_query_mut(query)
@@ -186,7 +186,7 @@ fn for_each_three_components(counter: &mut Counter, health: &Health, speed: &Spe
 #[system(World)]
 fn system_with_ref_resource(
     world: &mut World,
-    query: QueryDef<(&mut Counter, &Health)>,
+    query: Query<(&mut Counter, &Health)>,
     tick: &TickCount,
 ) {
     world
@@ -200,7 +200,7 @@ fn system_with_ref_resource(
 #[system(World)]
 fn system_with_value_resource(
     world: &mut World,
-    query: QueryDef<(&mut Counter, &Health)>,
+    query: Query<(&mut Counter, &Health)>,
     increment: usize,
 ) {
     world
@@ -214,7 +214,7 @@ fn system_with_value_resource(
 #[system(World)]
 fn system_with_multiple_resources(
     world: &mut World,
-    query: QueryDef<(&mut Counter, &mut Health)>,
+    query: Query<(&mut Counter, &mut Health)>,
     tick: &TickCount,
     dt: &DeltaTime,
     multiplier: i32,
@@ -229,7 +229,7 @@ fn system_with_multiple_resources(
 }
 
 #[system(World)]
-fn system_with_mutable_resource(world: &World, query: QueryDef<&Counter>, state: &mut GameState) {
+fn system_with_mutable_resource(world: &World, query: Query<&Counter>, state: &mut GameState) {
     let q = world.with_query(query);
     let count = q.len();
     for i in 0..count {
@@ -264,7 +264,7 @@ fn for_each_with_multiple_ref_resources(
 // ============================================================================
 
 #[system(World)]
-fn increment_only_tag_a(world: &mut World, query: QueryDef<(&mut Counter, &TagA)>) {
+fn increment_only_tag_a(world: &mut World, query: Query<(&mut Counter, &TagA)>) {
     world
         .with_query_mut(query)
         .iter_mut()
@@ -274,7 +274,7 @@ fn increment_only_tag_a(world: &mut World, query: QueryDef<(&mut Counter, &TagA)
 }
 
 #[system(World)]
-fn increment_only_tag_b(world: &mut World, query: QueryDef<(&mut Counter, &TagB)>) {
+fn increment_only_tag_b(world: &mut World, query: Query<(&mut Counter, &TagB)>) {
     world
         .with_query_mut(query)
         .iter_mut()
@@ -284,7 +284,7 @@ fn increment_only_tag_b(world: &mut World, query: QueryDef<(&mut Counter, &TagB)
 }
 
 #[system(World)]
-fn increment_with_health(world: &mut World, query: QueryDef<(&mut Counter, &Health)>) {
+fn increment_with_health(world: &mut World, query: Query<(&mut Counter, &Health)>) {
     world
         .with_query_mut(query)
         .iter_mut()

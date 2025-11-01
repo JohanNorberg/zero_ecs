@@ -240,9 +240,9 @@ fn collect_fn_sig(fn_sig: &&syn::Signature) -> Vec<SystemArg> {
                             .expect("#[system] no first segment");
                         let outer_ident = &segment.ident;
 
-                        if outer_ident == "QueryDef" {
+                        if outer_ident == "Query" {
                             let PathArguments::AngleBracketed(args) = &segment.arguments else {
-                                panic!("#[system] Expected angle bracketed arguments for QueryDef, but none were found");
+                                panic!("#[system] Expected angle bracketed arguments for Query, but none were found");
                             };
 
                             let arg = &args
@@ -317,7 +317,7 @@ fn collect_fn_sig(fn_sig: &&syn::Signature) -> Vec<SystemArg> {
                                     system_args.push(SystemArg::Query(arg_query))
                                 }
                                 GenericArgument::Type(ty) => {
-                                    panic!("#[system] Unsupported type in QueryDef: {:?}", ty);
+                                    panic!("#[system] Unsupported type in Query: {:?}", ty);
                                 }
                                 _ => {
                                     panic!(
