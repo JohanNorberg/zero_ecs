@@ -1,13 +1,13 @@
 [package]
 name = "zero_ecs_testbed"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zero_ecs = { path = "../zero_ecs", version = "0.3.1" }
+zero_ecs = { path = "../zero_ecs", version = "0.3.2" }
 
 [[bin]]
 name = "zero_ecs_testbed"
