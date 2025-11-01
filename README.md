@@ -1,10 +1,3 @@
-[![Warning](https://img.shields.io/badge/⚠️-Warning-red)](#)
-
-> **This is version `0.2.*`.**  
-> I am not completely happy with how this library works right now.  
->  
-> **I am working on `0.3.*` but I don't know when I will have time to finish development on it.**
-
 # Zero ECS
 
 Zero ECS is an Entity Component System that is written with 4 goals
@@ -15,218 +8,175 @@ Zero ECS is an Entity Component System that is written with 4 goals
 
 It achieves this by generating all code at compile time, using a combination of macros and build scripts.
 
+> **This is version `0.3.*`.**
+> It is almost a complete rewrite from `0.2.*`. And has breaking changes.
+
 ## Instructions
 
-Create a new project
+Add the dependency:
 
-```sh
-cargo new zero_ecs_example
-cd zero_ecs_example
 ```
-
-Add the dependencies
-
-```sh
 cargo add zero_ecs
-cargo add zero_ecs_build --build
 ```
 
-Your Cargo.toml should look something like this:
+Your `Cargo.toml` should look something like this:
 
-```sh
+```toml
 [dependencies]
-zero_ecs = "*"
-
-[build-dependencies]
-zero_ecs_build = "*"
-```
-
-Create `build.rs`
-
-```sh
-touch build.rs
-```
-
-Edit `build.rs` to call the zero_ecs's build generation code.
-
-```rust
-use zero_ecs_build::*;
-fn main() {
-    generate_ecs("src/main.rs"); // look for components, entities and systems in main.rs
-}
-```
-
-This will generate the entity component system based on the component, entities and systems in main.rs.
-It accepts a glob so you can use wild cards.
-
-```rust
-use zero_ecs_build::*;
-fn main() {
-    generate_ecs("src/**/*.rs"); // look in all *.rs files in src. 
-}
+zero_ecs = "0.3.*"
 ```
 
 ## Using the ECS
 
-### Include ECS
-
-In `main.rs`
-Include the ECS like so:
-
-```rust
-include!(concat!(env!("OUT_DIR"), "/zero_ecs.rs"));
-```
-
 ### Components
 
-Define some components:
-
-Position and velocity has x and y
+Components are just regular structs.
 
 ```rust
-#[component]
+#[derive(Default)]
 struct Position(f32, f32);
 
-#[component]
+#[derive(Default)]
 struct Velocity(f32, f32);
 ```
 
 It is normal to "tag" entities with a component in ECS to be able to single out those entities in systems.
 
 ```rust
-#[component]
+#[derive(Default)]
 struct EnemyComponent;
 
-#[component]
+#[derive(Default)]
 struct PlayerComponent;
 ```
 
-### Entities
+### Entities & World
 
-Entities are a collection of components, they may also be referred to as archetypes, or bundles, or game objects. 
-Note that once "in" the ECS. An Entity is simply an ID that can be copied.
-
-In our example, we define an enemy and a player, they both have position and velocity but can be differentiated by their "tag" components. 
+Entities are a collection of components. Use the `#[entity]` attribute to define them.
 
 ```rust
 #[entity]
-struct Enemy {
+#[derive(Default)]
+struct EnemyEntity {
     position: Position,
     velocity: Velocity,
     enemy_component: EnemyComponent,
 }
 
 #[entity]
-struct Player {
+#[derive(Default)]
+struct PlayerEntity {
     position: Position,
     velocity: Velocity,
     player_component: PlayerComponent,
 }
 ```
 
-### Systems
+Define the world using the `ecs_world!` macro. Must include all entities.
 
-Systems run the logic for the application. They can accept references, mutable references and queries. 
-
-In our example we can create a system that simply prints the position of all entities
+World and entities must be defined in the same crate.
 
 ```rust
-#[system]
-fn print_positions(world: &World, query: Query<&Position>) {
-    world.with_query(query).iter().for_each(|position| {
-        println!("Position: {:?}", position);
+ecs_world!(EnemyEntity, PlayerEntity);
+```
+
+You can now instantiate the world like this:
+
+```rust
+let mut world = World::default();
+```
+
+And create entities like this:
+
+```rust
+let player_entity = world.create(PlayerEntity {
+    position: Position(55.0, 165.0),
+    velocity: Velocity(100.0, 50.0),
+    ..Default::default()
+});
+```
+
+### Systems
+
+Systems run the logic for the application. There are two types of systems: `#[system]` and `#[system_for_each]`.
+
+#### system_for_each
+
+`#[system_for_each]` calls the system once for each successful query. This is the simplest way to write systems.
+
+```rust
+#[system_for_each(World)]
+fn print_positions(position: &Position) {
+    println!("x: {}, y: {}", position.0, position.1);
+}
+```
+
+Systems can also mutate and accept resources:
+
+```rust
+struct DeltaTime(f32);
+
+#[system_for_each(World)]
+fn apply_velocity(position: &mut Position, velocity: &Velocity, delta_time: &DeltaTime) {
+    position.0 += velocity.0 * delta_time.0;
+    position.1 += velocity.1 * delta_time.0;
+}
+```
+
+#### system
+
+The default way of using systems. Needs to accept world, 0-many queries and optional resources.
+
+```rust
+#[system(World)]
+fn print_enemy_positions(world: &World, query: QueryDef<(&Position, &EnemyComponent)>) {
+    world.with_query(query).iter().for_each(|(pos, _)| {
+        println!("x: {}, y: {}", pos.0, pos.1);
     });
 }
 ```
 
-#### Explained:
-
-- world: &World - Since the system doesn't modify anything, it can be an immutable reference
-- query: Query<&Position> - We want to query the world for all positions
-- world.with_query(query).iter() - creates an iterator over all Position components
-
-### Creating entities and calling system
-
-In our `fn main` change it to create 10 enemies and 10 players,
-Also add the `systems_main(&world);` to call all systems.
+### Creating entities and calling systems
 
 ```rust
 fn main() {
+    let delta_time = DeltaTime(1.0);
     let mut world = World::default();
 
     for i in 0..10 {
-        world.create(Enemy {
+        world.create(EnemyEntity {
             position: Position(i as f32, 5.0),
             velocity: Velocity(0.0, 1.0),
             ..Default::default()
         });
 
-        world.create(Player {
+        world.create(PlayerEntity {
             position: Position(5.0, i as f32),
             velocity: Velocity(1.0, 0.0),
             ..Default::default()
         });
     }
 
-    systems_main(&world);
+    world.apply_velocity(&delta_time);
+    world.print_positions();
+    world.print_enemy_positions();
 }
 ```
-
-Running the program now, will print the positions of the entities. 
 
 ## More advanced
 
-Continuing our example
+### Destroying entities
 
-### mutating systems
-
-Most systems will mutate the world state and needs additional resources, like texture managers, time managers, input managers etc. 
-A good practice is to group them in a Resources struct. (But Not nescessary)
+To destroy entities, query for `&Entity` to identify them. You can't destroy entities from within an iteration.
 
 ```rust
-struct Resources {
-    delta_time: f32,
-}
-
-#[system]
-fn apply_velocity(
-    world: &mut World, // world mut be mutable
-    resources: &Resources, // we need the delta time
-    query: Query<(&mut Position, &Velocity)>, // position should be mutable, velocity not.
-) {
-    world
-        .with_query_mut(query) // we call with_query_mut because it's a mutable query
-        .iter_mut() // iterating mutable
-        .for_each(|(position, velocity)| {
-            position.0 += velocity.0 * resources.delta_time;
-            position.1 += velocity.1 * resources.delta_time;
-        });
-}
-
-```
-
-We also have to change the main function to include resources in the call. 
-
-```rust
-let resources = Resources { delta_time: 0.1 };
-
-systems_main(&resources, &mut world);
-```
-
-
-#### Destroying entities
-
-Let's say we want to create a rule that if player and enemies get within 3 units of eachother they should both be destroyed. 
-This is how we might implement that:
-
-```rust
-#[system]
+#[system(World)]
 fn collide_enemy_and_players(
-    world: &mut World, // we are destorying entities so it needs to be mutable
-    players: Query<(&Entity, &Position, &PlayerComponent)>, // include the Entity to be able to identify entities
-    enemies: Query<(&Entity, &Position, &EnemyComponent)>, // same but for enemies
+    world: &mut World,
+    players: QueryDef<(&Entity, &Position, &PlayerComponent)>,
+    enemies: QueryDef<(&Entity, &Position, &EnemyComponent)>,
 ) {
-    let mut entities_to_destroy: Vec<Entity> = vec![]; // we can't (for obvious reasons) destroy entities from within an iteration.
+    let mut entities_to_destroy: HashSet<Entity> = HashSet::new();
 
     world
         .with_query(players)
@@ -239,8 +189,8 @@ fn collide_enemy_and_players(
                     if (player_position.0 - enemy_position.0).abs() < 3.0
                         && (player_position.1 - enemy_position.1).abs() < 3.0
                     {
-                        entities_to_destroy.push(*player_entity);
-                        entities_to_destroy.push(*enemy_entity);
+                        entities_to_destroy.insert(*player_entity);
+                        entities_to_destroy.insert(*enemy_entity);
                     }
                 });
         });
@@ -251,60 +201,33 @@ fn collide_enemy_and_players(
 }
 ```
 
-#### Get & At entities
+### Get & At
 
-Get is identical to query but takes an Entity. 
-At is identical to query but takes an index.
+`get` is identical to query but takes an `Entity`.
+`at` is identical to query but takes an index.
 
-Let's say you wanted an entity that follows a player. This is how you could implement that:
+Let's say you wanted an entity that follows a player:
 
-Define a component for the companion
 ```rust
-#[component]
 struct CompanionComponent {
     target_entity: Option<Entity>,
 }
-```
 
-Define the Companion Entity. It has a position and a companion component:
-```rust
 #[entity]
-struct Companion {
+struct CompanionEntity {
     position: Position,
     companion_component: CompanionComponent,
 }
 ```
 
-Now we need to write the companion system. 
-For every companion we need to check if it has a target. 
-If it has a target we need to check if target exists (it could have been deleted).
-If the target exists we get the *value of* target's position and set the companion's position with that value. 
-
-We need to query for companions and their position as mutable. And we need to query for every entity that has a position. This means a companion could technically follow it self. 
+We can't simply iterate through the companions and get the target position because we can only have one borrow if the borrow is mutable. The solution is to iterate using index, only borrowing what we need for a short time:
 
 ```rust
-#[system]
+#[system(World)]
 fn companion_follow(
     world: &mut World,
-    companions: Query<(&mut Position, &CompanionComponent)>,
-    positions: Query<&Position>,
-) {
-```
-
-Implementation: 
-We can't simply iterate through the companions, get the target position and update the position because we can only have one borrow if the borrow is mutable (unless we use unsafe code).
-
-We can do what we did with destroying entities, but it will be slow.
-
-The solution is to iterate using index, only borrowing what we need for a short time:
-
-
-```rust
-#[system]
-fn companion_follow(
-    world: &mut World,
-    companions: Query<(&mut Position, &CompanionComponent)>,
-    positions: Query<&Position>,
+    companions: QueryDef<(&mut Position, &CompanionComponent)>,
+    positions: QueryDef<&Position>,
 ) {
     for companion_idx in 0..world.with_query_mut(companions).len() {
         // iterate the count of companions
@@ -317,7 +240,7 @@ fn companion_follow(
                 world
                     .with_query(positions)
                     .get(companion_target_entity) // get the position for the companion_target_entity
-                    .map(|p| (p.0, p.1)) // map to get the VALUE
+                    .map(|p: &Position| (p.0, p.1)) // map to get the VALUE
             })
         {
             if let Some((companion_position, _)) =
@@ -333,6 +256,18 @@ fn companion_follow(
 }
 ```
 
-# TODO:
-- [ ] Re use IDs of deleted entities
+### Manual queries
 
+You can create queries outside systems using `make_query!`. Should rarely be used.
+
+```rust
+fn print_player_positions(world: &World) {
+    make_query!(PlayerPositionsQuery, Position, PlayerComponent);
+    world
+        .with_query(Query::<PlayerPositionsQuery>::new())
+        .iter()
+        .for_each(|(pos, _)| {
+            println!("x: {}, y: {}", pos.0, pos.1);
+        });
+}
+```

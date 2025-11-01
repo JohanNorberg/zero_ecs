@@ -1,6 +1,6 @@
 [package]
 name = "zero_ecs_macros"
-version = "0.2.24"
+version = "0.2.22"
 edition = "2021"
 description = "Procedural macros for Build scripts for: ZeroECS: an Entity Component System (ECS), using only zero-cost abstractions"
 repository = "https://github.com/JohanNorberg/zero_ecs"
@@ -13,7 +13,13 @@ readme = "README.md"
 
 [lib]
 proc-macro = true
+name = "zero_ecs_macros"
+path = "src/macros.rs"
 
 [dependencies]
-syn = { version = "2.0.51", features = ["full"] }
-quote = "1.0.35"
+proc-macro2 = "1.0.93"
+quote = "1.0.38"
+syn = { version = "2.0.98", features = ["full"] }
+macro_magic = { version = "0.6.0", features = ["proc_support"] }
+convert_case = "0.8.0"
+intehan_util_dump = "0.1.2"
