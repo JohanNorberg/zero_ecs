@@ -1,6 +1,6 @@
 [package]
 name = "zero_ecs"
-version = "0.2.22"
+version = "0.3.1"
 edition = "2021"
 description = "Entity Component System (ECS), using only zero-cost abstractions"
 repository = "https://github.com/JohanNorberg/zero_ecs"
@@ -12,7 +12,7 @@ categories = ["game-development", "data-structures"]
 readme = "README.md"
 
 [dependencies]
-zero_ecs_macros = { path = "../zero_ecs_macros", version = "0.2.22" }
+zero_ecs_macros = { path = "../zero_ecs_macros", version = "0.3.1" }
 itertools = "0.12.1"
 rayon = "1.9.0"
 macro_magic = { version = "0.6.0", features = ["proc_support"] }
