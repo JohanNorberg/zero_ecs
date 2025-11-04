@@ -28,6 +28,12 @@ zero_ecs = "0.3.*"
 
 ## Using the ECS
 
+### Use
+
+```rust
+use zero_ecs::*;
+```
+
 ### Components
 
 Components are just regular structs.
