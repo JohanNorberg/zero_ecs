@@ -14,7 +14,7 @@ pub fn get_default_queries() -> TokenStream {
 
         #[allow(dead_code)]
         impl<T> Query<T> {
-            fn new() -> Query<T> {
+            pub fn new() -> Query<T> {
                 Query {
                     phantom: PhantomData,
                 }
