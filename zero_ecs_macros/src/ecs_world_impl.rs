@@ -29,7 +29,7 @@ pub fn ecs_world(input: TokenStream) -> TokenStream {
         // type name should be collection
         let type_name = format_collection_name(ty);
         quote! {
-            #field_name: #type_name
+            pub #field_name: #type_name
         }
     });
 
@@ -90,8 +90,8 @@ pub fn ecs_world(input: TokenStream) -> TokenStream {
 
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
         pub struct Entity {
-            entity_type: EntityType,
-            id: usize
+            pub entity_type: EntityType,
+            pub id: usize
         }
 
         #default_queries

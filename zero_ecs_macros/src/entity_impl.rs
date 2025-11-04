@@ -58,10 +58,10 @@ pub fn entity(_: TokenStream, input: TokenStream) -> TokenStream {
         #[export_tokens]
         #[derive(Default)]
         #vis struct #collection_name {
-           #( #collection_fields, )*
-           entity: Vec<Entity>,
-           next_id: usize,
-           index_lookup: Vec<Option<usize>>,
+           #( pub #collection_fields, )*
+           pub entity: Vec<Entity>,
+           pub next_id: usize,
+           pub index_lookup: Vec<Option<usize>>,
         }
 
         impl WorldCreate<#ident> for #collection_name {
@@ -102,11 +102,15 @@ pub fn entity(_: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         impl #collection_name {
-            fn len(&self) -> usize {
+            pub fn new() -> Self {
+                Self::default()
+            }
+
+            pub fn len(&self) -> usize {
                 self.entity.len()
             }
 
-            fn query_mut<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
+            pub fn query_mut<'a, T: 'a>(&'a mut self) -> impl Iterator<Item = T> + 'a
             where
                 #collection_name: QueryMutFrom<'a, T>,
                 T: 'a + Send,
@@ -120,7 +124,7 @@ pub fn entity(_: TokenStream, input: TokenStream) -> TokenStream {
             {
                 QueryMutFrom::<T>::par_query_mut_from(self)
             }
-            fn get_mut<'a, T: 'a>(&'a mut self, entity: Entity) -> Option<T>
+            pub fn get_mut<'a, T: 'a>(&'a mut self, entity: Entity) -> Option<T>
             where
                 #collection_name: QueryMutFrom<'a, T>,
                 T: 'a + Send,
@@ -128,21 +132,21 @@ pub fn entity(_: TokenStream, input: TokenStream) -> TokenStream {
                 QueryMutFrom::<T>::get_mut_from(self, entity)
             }
 
-            fn query<'a, T: 'a>(&'a self) -> impl Iterator<Item = T> + 'a
+            pub fn query<'a, T: 'a>(&'a self) -> impl Iterator<Item = T> + 'a
             where
                 #collection_name: QueryFrom<'a, T>,
                 T: 'a + Send,
             {
                 QueryFrom::<T>::query_from(self)
             }
-            fn par_query<'a, T: 'a>(&'a self) -> impl ParallelIterator<Item = T> + 'a
+            pub fn par_query<'a, T: 'a>(&'a self) -> impl ParallelIterator<Item = T> + 'a
             where
                 #collection_name: QueryFrom<'a, T>,
                 T: 'a + Send,
             {
                 QueryFrom::<T>::par_query_from(self)
             }
-            fn get<'a, T: 'a>(&'a self, entity: Entity) -> Option<T>
+            pub fn get<'a, T: 'a>(&'a self, entity: Entity) -> Option<T>
             where
                 #collection_name: QueryFrom<'a, T>,
                 T: 'a + Send,
