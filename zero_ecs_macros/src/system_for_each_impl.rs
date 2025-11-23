@@ -8,10 +8,12 @@ use crate::query_impl::get_collection_component_fields;
 pub fn system_for_each(attr: TokenStream, item: TokenStream) -> TokenStream {
     let foreign_struct = syn::parse_macro_input!(attr as ItemStruct);
     let collection_component_fields = get_collection_component_fields(foreign_struct);
-    let component_types: HashSet<_> = collection_component_fields
+    let mut component_types: HashSet<_> = collection_component_fields
         .iter()
         .map(|ccf| &ccf.field_type)
         .collect();
+    let entity_name = "Entity".to_string();
+    component_types.insert(&entity_name);
     let input_fn = syn::parse_macro_input!(item as ItemFn);
 
     let fn_vis = &input_fn.vis;

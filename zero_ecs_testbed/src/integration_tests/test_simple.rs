@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use zero_ecs::*;
 
 pub struct Value(usize);
@@ -75,4 +77,42 @@ fn can_make_mutable_query() {
     world.assert_value_for(10, a);
     world.assert_value_for(0, b);
     world.assert_value_for(0, d);
+}
+
+struct ToDestroy(HashSet<Entity>);
+
+#[system_for_each(World)]
+pub fn destroy_even_values(entity: &Entity, value: &Value, to_destroy: &mut ToDestroy) {
+    if value.0 % 2 == 0 {
+        to_destroy.0.insert(*entity);
+    }
+}
+
+struct Sum(usize);
+
+#[system_for_each(World)]
+pub fn sum_values(value: &Value, sum: &mut Sum) {
+    sum.0 += value.0;
+}
+
+#[test]
+fn can_destroy_specific() {
+    let mut world = World::default();
+    let _ = world.create(ValueEntity { value: Value(0) });
+    let _ = world.create(ValueEntity { value: Value(1) });
+    let _ = world.create(ValueEntity { value: Value(2) });
+    let _ = world.create(ValueEntity { value: Value(3) });
+    let _ = world.create(ValueEntity { value: Value(4) });
+    let mut to_destroy = ToDestroy(HashSet::new());
+    world.destroy_even_values(&mut to_destroy);
+
+    to_destroy.0.iter().for_each(|entity| {
+        world.destroy(*entity);
+    });
+
+    // 1+3 is 4
+    let mut sum = Sum(0);
+    world.sum_values(&mut sum);
+
+    assert_eq!(4, sum.0);
 }
